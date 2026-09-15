@@ -1,6 +1,6 @@
 import { SavingRecord } from '../types';
 
-export type CycleTransactionType = 'salary' | 'income' | 'expense';
+export type CycleTransactionType = 'salary' | 'income' | 'expense' | 'saving';
 
 export interface CycleTransaction {
   id: string;
@@ -74,7 +74,7 @@ export const CycleStorage = {
       id: input.id || `cycle_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       date: input.date,
       amount: normalizeAmount(input.type, input.amount),
-      memo: input.memo || (input.type === 'expense' ? '소비' : input.type === 'salary' ? '급여' : '수입'),
+      memo: input.memo || (input.type === 'expense' ? '소비' : input.type === 'salary' ? '급여' : input.type === 'saving' ? '저축' : '수입'),
       type: input.type,
       createdAt: Date.now(),
     };
