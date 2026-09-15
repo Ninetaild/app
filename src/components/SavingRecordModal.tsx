@@ -1,20 +1,96 @@
 import React, { useEffect, useState } from 'react';
-import { X, Trash2, Calendar, Tag, Check, ArrowDownRight, ArrowUpRight, PiggyBank, WalletCards } from 'lucide-react';
+import { X, Trash2, Calendar, Tag, ArrowDownRight, ArrowUpRight, PiggyBank } from 'lucide-react';
 import { SavingRecord } from '../types';
 import { StorageRepository } from '../data/storage';
-import { CycleStorage, CycleTransactionType } from '../data/cycleStorage';
+import { CycleStorage, CycleTransaction, CycleTransactionType } from '../data/cycleStorage';
 import confetti from 'canvas-confetti';
 
-interface Props { isOpen: boolean; onClose: () => void; recordToEdit?: SavingRecord | null; onSaved?: () => void; cycleTransactionType?: CycleTransactionType; }
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  recordToEdit?: SavingRecord | null;
+  transactionToEdit?: CycleTransaction | null;
+  onSaved?: () => void;
+  cycleTransactionType?: CycleTransactionType;
+}
+
 const labels: Record<CycleTransactionType, string> = { salary: '급여', income: '수입', expense: '소비', saving: '고정 저축' };
 
-export const SavingRecordModal: React.FC<Props> = ({ isOpen, onClose, recordToEdit, onSaved, cycleTransactionType = 'saving' }) => {
-  const [amount, setAmount] = useState(100000); const [amountInput, setAmountInput] = useState('100,000'); const [date, setDate] = useState(''); const [memo, setMemo] = useState(''); const [deleteConfirm, setDeleteConfirm] = useState(false);
-  useEffect(() => { if (!isOpen) return; const today = new Date().toISOString().slice(0,10); if (recordToEdit) { setAmount(recordToEdit.amount); setAmountInput(new Intl.NumberFormat('ko-KR').format(recordToEdit.amount)); setDate(recordToEdit.date); setMemo(recordToEdit.memo); } else { setAmount(100000); setAmountInput('100,000'); setDate(today); setMemo(labels[cycleTransactionType]); } setDeleteConfirm(false); }, [isOpen, recordToEdit, cycleTransactionType]);
-  const save = (e: React.FormEvent) => { e.preventDefault(); if (amount <= 0) return alert('금액을 0원보다 크게 입력해주세요.'); if (recordToEdit || cycleTransactionType === 'saving') { StorageRepository.saveRecord({ id: recordToEdit?.id, amount, date, memo: memo.trim() || labels[cycleTransactionType] }); } else { CycleStorage.saveTransaction({ amount, date, memo: memo.trim() || labels[cycleTransactionType], type: cycleTransactionType }); } try { confetti({ particleCount: 35, spread: 55, origin: { y: 0.7 } }); } catch {} onSaved?.(); onClose(); };
-  const remove = () => { if (recordToEdit) StorageRepository.deleteRecord(recordToEdit.id); onSaved?.(); onClose(); };
+export const SavingRecordModal: React.FC<Props> = ({ isOpen, onClose, recordToEdit, transactionToEdit, onSaved, cycleTransactionType = 'saving' }) => {
+  const [amount, setAmount] = useState(100000);
+  const [amountInput, setAmountInput] = useState('100,000');
+  const [date, setDate] = useState('');
+  const [memo, setMemo] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const editingType = transactionToEdit?.type || cycleTransactionType;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const today = new Date().toISOString().slice(0, 10);
+    if (transactionToEdit) {
+      const value = Math.abs(transactionToEdit.amount);
+      setAmount(value);
+      setAmountInput(new Intl.NumberFormat('ko-KR').format(value));
+      setDate(transactionToEdit.date);
+      setMemo(transactionToEdit.memo);
+    } else if (recordToEdit) {
+      setAmount(recordToEdit.amount);
+      setAmountInput(new Intl.NumberFormat('ko-KR').format(recordToEdit.amount));
+      setDate(recordToEdit.date);
+      setMemo(recordToEdit.memo);
+    } else {
+      setAmount(100000);
+      setAmountInput('100,000');
+      setDate(today);
+      setMemo(labels[cycleTransactionType]);
+    }
+    setDeleteConfirm(false);
+  }, [isOpen, recordToEdit, transactionToEdit, cycleTransactionType]);
+
+  const save = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!Number.isInteger(amount) || amount <= 0) return alert('금액은 1원 이상의 정수로 입력해주세요.');
+
+    if (transactionToEdit) {
+      CycleStorage.saveTransaction({ id: transactionToEdit.id, amount, date, memo: memo.trim() || labels[transactionToEdit.type], type: transactionToEdit.type });
+    } else if (recordToEdit || cycleTransactionType === 'saving') {
+      StorageRepository.saveRecord({ id: recordToEdit?.id, amount, date, memo: memo.trim() || labels[cycleTransactionType] });
+    } else {
+      CycleStorage.saveTransaction({ amount, date, memo: memo.trim() || labels[cycleTransactionType], type: cycleTransactionType });
+    }
+    try { confetti({ particleCount: 35, spread: 55, origin: { y: 0.7 } }); } catch {}
+    onSaved?.();
+    onClose();
+  };
+
+  const remove = () => {
+    if (transactionToEdit) CycleStorage.deleteTransaction(transactionToEdit.id);
+    if (recordToEdit) StorageRepository.deleteRecord(recordToEdit.id);
+    onSaved?.();
+    onClose();
+  };
+
   if (!isOpen) return null;
-  const isExpense = cycleTransactionType === 'expense';
-  const title = recordToEdit ? '저축 기록 수정' : `${labels[cycleTransactionType]} 입력`;
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs"><div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-stone-200 overflow-hidden"><div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50/70"><div><h2 className="text-base font-bold text-stone-800">{title}</h2><p className="text-xs text-stone-500 mt-0.5">급여 주기의 돈 흐름을 기록합니다.</p></div><button onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-700 rounded-full"><X className="w-5 h-5" /></button></div><form onSubmit={save} className="p-6 space-y-5"><div><label className="block text-xs font-semibold text-stone-600 mb-1.5">금액 (원)</label><input type="text" inputMode="numeric" value={amountInput} onChange={(e) => { const n = parseInt(e.target.value.replace(/\D/g,''),10) || 0; setAmount(n); setAmountInput(n ? new Intl.NumberFormat('ko-KR').format(n) : ''); }} className="w-full px-4 py-3 bg-stone-50 focus:bg-white text-stone-900 text-2xl font-bold rounded-2xl border border-stone-200 focus:border-emerald-500 outline-hidden text-right" /></div><div><label className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 mb-1.5"><Calendar className="w-3.5 h-3.5" />날짜</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm" /></div><div><label className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 mb-1.5"><Tag className="w-3.5 h-3.5" />메모</label><input value={memo} onChange={(e) => setMemo(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm" /></div><div className="pt-2 flex gap-2">{recordToEdit && <button type="button" onClick={() => setDeleteConfirm(true)} className="p-3 text-rose-600 border border-rose-200 rounded-2xl"><Trash2 className="w-5 h-5" /></button>}<button type="submit" className={`flex-1 py-3.5 text-white font-bold rounded-2xl flex items-center justify-center gap-2 ${isExpense ? 'bg-stone-800' : 'bg-emerald-600'}`}>{isExpense ? <ArrowDownRight className="w-5 h-5" /> : cycleTransactionType === 'salary' || cycleTransactionType === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <PiggyBank className="w-5 h-5" />}{recordToEdit ? '수정 완료' : `${labels[cycleTransactionType]} 저장`}</button></div></form>{deleteConfirm && <div className="p-4 bg-rose-50 border-t border-rose-200 flex items-center justify-between"><span className="text-xs font-bold text-rose-800">이 기록을 삭제할까요?</span><div className="flex gap-2"><button onClick={() => setDeleteConfirm(false)} className="px-3 py-1.5 text-xs bg-white rounded-lg">취소</button><button onClick={remove} className="px-3 py-1.5 text-xs text-white bg-rose-600 rounded-lg">삭제</button></div></div>}</div></div>;
+  const isExpense = editingType === 'expense';
+  const title = transactionToEdit ? `${labels[editingType]} 수정` : recordToEdit ? '저축 기록 수정' : `${labels[cycleTransactionType]} 입력`;
+
+  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+    <div className="w-full max-w-md bg-white rounded-3xl shadow-xl border border-stone-200 overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 bg-stone-50/70">
+        <div><h2 className="text-base font-bold text-stone-800">{title}</h2><p className="text-xs text-stone-500 mt-0.5">돈의 흐름을 개별 항목으로 기록합니다.</p></div>
+        <button onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-700 rounded-full"><X className="w-5 h-5" /></button>
+      </div>
+      <form onSubmit={save} className="p-6 space-y-5">
+        <div><label className="block text-xs font-semibold text-stone-600 mb-1.5">금액 (원)</label><input type="text" inputMode="numeric" value={amountInput} onChange={(e) => { const digits = e.target.value.replace(/\D/g, ''); const n = digits ? parseInt(digits, 10) : 0; setAmount(n); setAmountInput(digits ? new Intl.NumberFormat('ko-KR').format(n) : ''); }} className="w-full px-4 py-3 bg-stone-50 focus:bg-white text-stone-900 text-2xl font-bold rounded-2xl border border-stone-200 focus:border-emerald-500 outline-hidden text-right" /></div>
+        <div><label className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 mb-1.5"><Calendar className="w-3.5 h-3.5" />날짜</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm" /></div>
+        <div><label className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 mb-1.5"><Tag className="w-3.5 h-3.5" />메모</label><input value={memo} onChange={(e) => setMemo(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm" /></div>
+        <div className="pt-2 flex gap-2">
+          {(recordToEdit || transactionToEdit) && <button type="button" onClick={() => setDeleteConfirm(true)} className="p-3 text-rose-600 border border-rose-200 rounded-2xl"><Trash2 className="w-5 h-5" /></button>}
+          <button type="submit" className={`flex-1 py-3.5 text-white font-bold rounded-2xl flex items-center justify-center gap-2 ${isExpense ? 'bg-stone-800' : 'bg-emerald-600'}`}>{isExpense ? <ArrowDownRight className="w-5 h-5" /> : editingType === 'salary' || editingType === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <PiggyBank className="w-5 h-5" />}{recordToEdit || transactionToEdit ? '수정 완료' : `${labels[cycleTransactionType]} 저장`}</button>
+        </div>
+      </form>
+      {deleteConfirm && <div className="p-4 bg-rose-50 border-t border-rose-200 flex items-center justify-between"><span className="text-xs font-bold text-rose-800">이 기록을 삭제할까요?</span><div className="flex gap-2"><button onClick={() => setDeleteConfirm(false)} className="px-3 py-1.5 text-xs bg-white rounded-lg">취소</button><button onClick={remove} className="px-3 py-1.5 text-xs text-white bg-rose-600 rounded-lg">삭제</button></div></div>}
+    </div>
+  </div>;
 };
