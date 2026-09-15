@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Check, ExternalLink, FileSpreadsheet, RefreshCw, ShieldCheck, X } from 'lucide-react';
-import { clearSheetsConnection, getLastSyncInfo, getSavedSheetsUrl, saveSheetsUrl, syncAllToGoogleSheets } from '../data/googleSheets';
+import { clearSheetsConnection, connectGoogleSheets, getLastSyncInfo, getSavedSheetsUrl, saveSheetsUrl, syncAllToGoogleSheets } from '../data/googleSheets';
 import { clearGoogleToken, getGoogleClientId } from '../data/googleAuth';
 import { StorageRepository } from '../data/storage';
 
@@ -46,7 +46,11 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({ isOpen, on
     try {
       const records = StorageRepository.getAllRecords();
       const goals = StorageRepository.getAllGoalKeys().reduce((acc, key) => { acc[key] = StorageRepository.getMonthlyGoal(key); return acc; }, {} as Record<string, number>);
-      const success = await syncAllToGoogleSheets(records, goals, StorageRepository.getSettings(), true);
+      if (!getSavedSheetsUrl()) {
+        const result = await connectGoogleSheets();
+        setSpreadsheetUrl(result.spreadsheetUrl);
+      }
+      const success = await syncAllToGoogleSheets(records, goals, StorageRepository.getSettings());
       setSpreadsheetUrl(getSavedSheetsUrl());
       setLastSync(getLastSyncInfo());
       setMessage(success ? 'Google Sheets에 최신 로컬 데이터를 백업했습니다.' : '백업에 실패했습니다. 저축 데이터는 이 기기에 그대로 남아 있습니다.');
