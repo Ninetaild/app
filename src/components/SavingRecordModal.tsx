@@ -14,7 +14,7 @@ interface Props {
   cycleTransactionType?: CycleTransactionType;
 }
 
-const labels: Record<CycleTransactionType, string> = { salary: '급여', income: '수입', expense: '소비', saving: '고정 저축' };
+const labels: Record<CycleTransactionType, string> = { income: '수입', expense: '소비', saving: '고정 저축' };
 
 export const SavingRecordModal: React.FC<Props> = ({ isOpen, onClose, recordToEdit, transactionToEdit, onSaved, cycleTransactionType = 'saving' }) => {
   const [amount, setAmount] = useState(100000);
@@ -87,7 +87,7 @@ export const SavingRecordModal: React.FC<Props> = ({ isOpen, onClose, recordToEd
         <div><label className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 mb-1.5"><Tag className="w-3.5 h-3.5" />메모</label><input value={memo} onChange={(e) => setMemo(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm" /></div>
         <div className="pt-2 flex gap-2">
           {(recordToEdit || transactionToEdit) && <button type="button" onClick={() => setDeleteConfirm(true)} className="p-3 text-rose-600 border border-rose-200 rounded-2xl"><Trash2 className="w-5 h-5" /></button>}
-          <button type="submit" className={`flex-1 py-3.5 text-white font-bold rounded-2xl flex items-center justify-center gap-2 ${isExpense ? 'bg-stone-800' : 'bg-emerald-600'}`}>{isExpense ? <ArrowDownRight className="w-5 h-5" /> : editingType === 'salary' || editingType === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <PiggyBank className="w-5 h-5" />}{recordToEdit || transactionToEdit ? '수정 완료' : `${labels[cycleTransactionType]} 저장`}</button>
+          <button type="submit" className={`flex-1 py-3.5 text-white font-bold rounded-2xl flex items-center justify-center gap-2 ${isExpense ? 'bg-stone-800' : 'bg-emerald-600'}`}>{isExpense ? <ArrowDownRight className="w-5 h-5" /> : editingType === 'income' ? <ArrowUpRight className="w-5 h-5" /> : <PiggyBank className="w-5 h-5" />}{recordToEdit || transactionToEdit ? '수정 완료' : `${labels[cycleTransactionType]} 저장`}</button>
         </div>
       </form>
       {deleteConfirm && <div className="p-4 bg-rose-50 border-t border-rose-200 flex items-center justify-between"><span className="text-xs font-bold text-rose-800">이 기록을 삭제할까요?</span><div className="flex gap-2"><button onClick={() => setDeleteConfirm(false)} className="px-3 py-1.5 text-xs bg-white rounded-lg">취소</button><button onClick={remove} className="px-3 py-1.5 text-xs text-white bg-rose-600 rounded-lg">삭제</button></div></div>}
