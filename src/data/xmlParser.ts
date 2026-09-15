@@ -36,6 +36,13 @@ export function parseAppTechXml(xmlString: string): AppTechItem[] {
 
 export interface AppTechFetchResult { items: AppTechItem[]; source: 'network' | 'cache' | 'default'; lastUpdated: string; errorMessage?: string; }
 
+function normalizeXmlUrl(url: string): string {
+  const trimmed = (url || '').trim();
+  if (!trimmed) return './xml/recommended-apps.xml';
+  if (/^(https?:\/\/|\/|\.\/|\.\.\/)/i.test(trimmed)) return trimmed;
+  return `https://${trimmed}`;
+}
+
 export const AppTechRepository = {
   getCachedData(): { items: AppTechItem[]; time: string } | null {
     try {
@@ -54,9 +61,9 @@ export const AppTechRepository = {
   },
   async fetchAppTechItems(url: string): Promise<AppTechFetchResult> {
     // 기존 기본 URL을 사용하는 사용자는 새 XML 목록으로 자연스럽게 전환한다.
-    const configuredUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+    const configuredUrl = normalizeXmlUrl(url);
     const targetUrl = configuredUrl === 'https://ninetaild.github.io/app/xml.xml'
-      ? 'https://ninetaild.github.io/app/xml/recommended-apps.xml'
+      ? './xml/recommended-apps.xml'
       : configuredUrl;
     try {
       const controller = new AbortController();
@@ -65,15 +72,17 @@ export const AppTechRepository = {
       clearTimeout(timeoutId);
       if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       const parsedItems = parseAppTechXml(await response.text());
+      // HTTP 200이어도 XML이 비어 있으면 HomeScreen에 아무것도 표시되지 않으므로 실패로 취급한다.
+      if (parsedItems.length === 0) throw new Error('추천 앱 XML에 표시할 활성 앱이 없습니다.');
       this.saveToCache(parsedItems);
       return { items: parsedItems, source: 'network', lastUpdated: new Date().toLocaleString('ko-KR') };
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : '네트워크 통신 실패';
-      console.warn('GitHub XML fetch failed, attempting local cache fallback:', errorMsg);
+      console.warn('Recommended app XML fetch failed, attempting local cache/default fallback:', errorMsg);
       const cached = this.getCachedData();
-      if (cached && cached.items.length > 0) return { items: cached.items, source: 'cache', lastUpdated: cached.time, errorMessage: `GitHub 연결 실패 (${errorMsg}). 저장된 로컬 캐시를 표시합니다.` };
+      if (cached && cached.items.length > 0) return { items: cached.items, source: 'cache', lastUpdated: cached.time, errorMessage: `GitHub XML 연결 실패 (${errorMsg}). 저장된 추천 목록을 표시합니다.` };
       const defaultItems = parseAppTechXml(DEFAULT_APPTECH_XML);
-      return { items: defaultItems, source: 'default', lastUpdated: '내장 기본 데이터', errorMessage: `GitHub 연결 실패 (${errorMsg}). 앱 기본 추천 데이터를 표시합니다.` };
+      return { items: defaultItems, source: 'default', lastUpdated: '내장 기본 데이터', errorMessage: `GitHub XML 연결 실패 (${errorMsg}). 기본 추천 목록을 표시합니다.` };
     }
   },
 };
