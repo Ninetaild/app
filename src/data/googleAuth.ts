@@ -1,4 +1,4 @@
-const CLIENT_ID = ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || '').trim();
+const CLIENT_ID = ((import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) || '971472189674-6sboonn757mpkpt4av79k6epq2o3b5p9.apps.googleusercontent.com').trim();
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
 const SHEETS_API = 'https://sheets.googleapis.com/v4';
 
