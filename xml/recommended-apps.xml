@@ -4,7 +4,7 @@
   name: 화면에 표시할 앱 이름
   description: 최근 돈의 흐름 아래에 표시할 짧은 설명
   url: 카드 전체를 눌렀을 때 이동할 주소
-  isActive: false이면 앱 화면에 표시하지 않음
+  isActive: false이면 앱 화면에 표시하지 않음.
 -->
 <recommendedApps version="1.0">
   <app id="monimo" isActive="true">
