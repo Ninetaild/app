@@ -1,5 +1,6 @@
 import { SavingRecord, AppSettings } from '../types';
 import { googleApi, getGoogleClientId } from './googleAuth';
+import { CycleStorage, CycleTransaction } from './cycleStorage';
 
 const STORAGE_KEYS = {
   SPREADSHEET_ID: 'saving_game_google_spreadsheet_id',
@@ -8,7 +9,7 @@ const STORAGE_KEYS = {
   LAST_SYNC_STATUS: 'saving_game_sheets_last_sync_status',
 };
 
-const REQUIRED_SHEETS = ['저축내역', '월별목표', '설정'] as const;
+const REQUIRED_SHEETS = ['급여일', '수입', '저축', '소비', '목표 저축액'] as const;
 
 type SheetInfo = { properties?: { sheetId?: number; title?: string } };
 interface SpreadsheetInfo {
@@ -114,19 +115,46 @@ async function ensureRequiredSheets(spreadsheet: SpreadsheetInfo): Promise<void>
 }
 
 function rowsForSync(records: SavingRecord[], goals: Record<string, number>, settings: AppSettings) {
+  const transactions = CycleStorage.getAllTransactions();
+  const incomes = transactions.filter((item) => item.type === 'income');
+  const expenses = transactions.filter((item) => item.type === 'expense');
+  const savings = transactions.filter((item) => item.type === 'saving');
+
   return {
-    records: [
-      ['기록ID', '날짜', '저축액(원)', '메모', '등록일시'],
-      ...records.map((record) => [record.id || '', record.date || '', Number(record.amount) || 0, record.memo || '', new Date(record.createdAt || Date.now()).toISOString()]),
-    ],
-    goals: [
-      ['년월', '목표액(원)'],
-      ...Object.keys(goals).sort().map((monthKey) => [monthKey, Number(goals[monthKey]) || 0]),
-    ],
-    settings: [
+    payday: [
       ['항목', '값'],
-      ['payday', settings.payday ?? ''],
-      ['defaultMonthlyTarget', settings.defaultMonthlyTarget ?? ''],
+      ['급여일', Number(settings.payday) || 25],
+    ],
+    income: [
+      ['거래ID', '날짜', '수입액(원)', '메모', '등록일시'],
+      ...incomes.map((item) => [item.id, item.date, Math.abs(Number(item.amount) || 0), item.memo || '수입', new Date(item.createdAt || Date.now()).toISOString()]),
+    ],
+    saving: [
+      ['거래ID', '날짜', '저축액(원)', '메모', '등록일시'],
+      ...[
+        ...records.map((record) => ({
+          id: record.id || '',
+          date: record.date || '',
+          amount: Number(record.amount) || 0,
+          memo: record.memo || '저축',
+          createdAt: record.createdAt || Date.now(),
+        })),
+        ...savings.map((item) => ({
+          id: item.id,
+          date: item.date,
+          amount: Math.abs(Number(item.amount) || 0),
+          memo: item.memo || '저축',
+          createdAt: item.createdAt || Date.now(),
+        })),
+      ].map((item) => [item.id, item.date, item.amount, item.memo, new Date(item.createdAt).toISOString()]),
+    ],
+    expense: [
+      ['거래ID', '날짜', '소비액(원)', '메모', '등록일시'],
+      ...expenses.map((item) => [item.id, item.date, Math.abs(Number(item.amount) || 0), item.memo || '소비', new Date(item.createdAt || Date.now()).toISOString()]),
+    ],
+    goal: [
+      ['년월', '목표 저축액(원)'],
+      ...Object.keys(goals).sort().map((monthKey) => [monthKey, Number(goals[monthKey]) || 0]),
     ],
   };
 }
@@ -159,6 +187,64 @@ async function deleteRow(spreadsheetId: string, sheetId: number, zeroBasedRowInd
   });
 }
 
+async function formatSheets(spreadsheetId: string, spreadsheet: SpreadsheetInfo): Promise<void> {
+  const sheetIds = new Map(
+    (spreadsheet.sheets || [])
+      .map((sheet) => [sheet.properties?.title, sheet.properties?.sheetId] as const)
+      .filter((entry): entry is readonly [string, number] => typeof entry[0] === 'string' && typeof entry[1] === 'number'),
+  );
+
+  const requests: unknown[] = [];
+  REQUIRED_SHEETS.forEach((title) => {
+    const sheetId = sheetIds.get(title);
+    if (sheetId === undefined) return;
+    requests.push(
+      {
+        repeatCell: {
+          range: { sheetId, startRowIndex: 0, endRowIndex: 1 },
+          cell: { userEnteredFormat: { textFormat: { bold: true }, horizontalAlignment: 'CENTER' } },
+          fields: 'userEnteredFormat.textFormat.bold,userEnteredFormat.horizontalAlignment',
+        },
+      },
+      {
+        updateSheetProperties: {
+          properties: { sheetId, gridProperties: { frozenRowCount: 1 } },
+          fields: 'gridProperties.frozenRowCount',
+        },
+      },
+      {
+        autoResizeDimensions: {
+          dimensions: { sheetId, dimension: 'COLUMNS', startIndex: 0, endIndex: title === '급여일' || title === '목표 저축액' ? 2 : 5 },
+        },
+      },
+    );
+  });
+
+  const applyCurrencyFormat = (title: typeof REQUIRED_SHEETS[number], columnIndex: number) => {
+    const sheetId = sheetIds.get(title);
+    if (sheetId === undefined) return;
+    requests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: 1, startColumnIndex: columnIndex, endColumnIndex: columnIndex + 1 },
+        cell: { userEnteredFormat: { numberFormat: { type: 'NUMBER', pattern: '#,##0"원"' } } },
+        fields: 'userEnteredFormat.numberFormat',
+      },
+    });
+  };
+
+  applyCurrencyFormat('수입', 2);
+  applyCurrencyFormat('저축', 2);
+  applyCurrencyFormat('소비', 2);
+  applyCurrencyFormat('목표 저축액', 1);
+
+  if (requests.length) {
+    await googleApi(`/spreadsheets/${encodeURIComponent(spreadsheetId)}:batchUpdate`, {
+      method: 'POST',
+      body: JSON.stringify({ requests }),
+    });
+  }
+}
+
 async function getSpreadsheetForSync(): Promise<SpreadsheetInfo> {
   const spreadsheet = await ensureSpreadsheet();
   if (!spreadsheet.spreadsheetId) throw new Error('Google Sheets ID를 확인할 수 없습니다.');
@@ -186,10 +272,15 @@ export async function syncAllToGoogleSheets(records: SavingRecord[], goals: Reco
     const rows = rowsForSync(records, goals, settings);
     await Promise.all(REQUIRED_SHEETS.map((title) => clearRange(id, `${title}!A:Z`)));
     await Promise.all([
-      writeRange(id, '저축내역!A1', rows.records),
-      writeRange(id, '월별목표!A1', rows.goals),
-      writeRange(id, '설정!A1', rows.settings),
+      writeRange(id, '급여일!A1', rows.payday),
+      writeRange(id, '수입!A1', rows.income),
+      writeRange(id, '저축!A1', rows.saving),
+      writeRange(id, '소비!A1', rows.expense),
+      writeRange(id, '목표 저축액!A1', rows.goal),
     ]);
+    // Sheet creation responses may not contain the newly added sheet IDs, so fetch again before formatting.
+    const latest = await googleApi<SpreadsheetInfo>(`/spreadsheets/${encodeURIComponent(id)}?includeGridData=false`);
+    await formatSheets(id, latest);
     updateSyncStatus('success');
     return true;
   } catch (error) {
@@ -209,14 +300,14 @@ function enqueue<T>(task: () => Promise<T>): Promise<T> {
 async function upsertRecord(record: SavingRecord): Promise<boolean> {
   const spreadsheet = await getSpreadsheetForSync();
   const id = spreadsheet.spreadsheetId!;
-  const values = await readRange(id, '저축내역!A:E');
+  const values = await readRange(id, '저축!A:E');
   const rowIndex = values.findIndex((row, index) => index > 0 && String(row[0] ?? '') === record.id);
   const row = [[record.id || '', record.date || '', Number(record.amount) || 0, record.memo || '', new Date(record.createdAt || Date.now()).toISOString()]];
   if (rowIndex >= 1) {
-    await writeRange(id, `저축내역!A${rowIndex + 1}:E${rowIndex + 1}`, row);
+    await writeRange(id, `저축!A${rowIndex + 1}:E${rowIndex + 1}`, row);
   } else {
     const targetRow = Math.max(values.length + 1, 2);
-    await writeRange(id, `저축내역!A${targetRow}:E${targetRow}`, row);
+    await writeRange(id, `저축!A${targetRow}:E${targetRow}`, row);
   }
   return true;
 }
@@ -244,14 +335,14 @@ export function deleteRecordFromGoogleSheets(recordId: string): Promise<boolean>
       updateSyncStatus('syncing');
       const spreadsheet = await getSpreadsheetForSync();
       const id = spreadsheet.spreadsheetId!;
-      const values = await readRange(id, '저축내역!A:E');
+      const values = await readRange(id, '저축!A:E');
       const rowIndex = values.findIndex((row, index) => index > 0 && String(row[0] ?? '') === recordId);
       if (rowIndex >= 1) {
-        const sheet = (spreadsheet.sheets || []).find((s) => s.properties?.title === '저축내역');
+        const sheet = (spreadsheet.sheets || []).find((s) => s.properties?.title === '저축');
         if (typeof sheet?.properties?.sheetId === 'number') {
           await deleteRow(id, sheet.properties.sheetId, rowIndex);
         } else {
-          await clearRange(id, `저축내역!A${rowIndex + 1}:E${rowIndex + 1}`);
+          await clearRange(id, `저축!A${rowIndex + 1}:E${rowIndex + 1}`);
         }
       }
       updateSyncStatus('success');
@@ -271,11 +362,11 @@ export function syncGoalToGoogleSheets(monthKey: string, targetAmount: number): 
       updateSyncStatus('syncing');
       const spreadsheet = await getSpreadsheetForSync();
       const id = spreadsheet.spreadsheetId!;
-      const values = await readRange(id, '월별목표!A:B');
+      const values = await readRange(id, '목표 저축액!A:B');
       const rowIndex = values.findIndex((row, index) => index > 0 && String(row[0] ?? '') === monthKey);
       const row = [[monthKey, Number(targetAmount) || 0]];
       const targetRow = rowIndex >= 1 ? rowIndex + 1 : Math.max(values.length + 1, 2);
-      await writeRange(id, `월별목표!A${targetRow}:B${targetRow}`, row);
+      await writeRange(id, `목표 저축액!A${targetRow}:B${targetRow}`, row);
       updateSyncStatus('success');
       return true;
     } catch (error) {
