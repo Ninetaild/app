@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, CheckCircle2, AlertCircle, Target } from 'lucide-react';
 import { SavingRecord } from '../types';
 import { StorageRepository, getCurrentMonthKey, formatCurrencyKRW, formatDateKorean, formatMonthDisplay } from '../data/storage';
-import { CycleStorage, CycleTransaction } from '../data/cycleStorage';
+import { CycleStorage, CycleTransaction, getCycleForDate } from '../data/cycleStorage';
 import { LevelCalculator } from '../domain/levelCalculator';
 
 export const HistoryScreen: React.FC = () => {
@@ -34,9 +34,21 @@ export const HistoryScreen: React.FC = () => {
 
   const monthRecords = allRecords.filter((r) => r.date.startsWith(selectedMonthKey));
   const monthTransactions = allTransactions.filter((t) => t.date.startsWith(selectedMonthKey));
+  const payday = (() => { const value = StorageRepository.getSettings().payday; return Number.isInteger(value) && value >= 1 && value <= 31 ? value : 25; })();
+  const cycleAnchor = useMemo(() => {
+    const now = new Date();
+    const currentMonthKey = getCurrentMonthKey();
+    if (selectedMonthKey === currentMonthKey) return now;
+    const [year, month] = selectedMonthKey.split('-').map(Number);
+    return new Date(year, month - 1, 15);
+  }, [selectedMonthKey]);
+  const selectedCycle = useMemo(() => getCycleForDate(cycleAnchor, payday), [cycleAnchor, payday]);
+  const cycleIncomeTotal = allTransactions
+    .filter((t) => t.type === 'income' && t.date >= selectedCycle.startDate && t.date < selectedCycle.endDate)
+    .reduce((sum, t) => sum + Math.max(0, t.amount), 0);
   const monthTotal = monthRecords.reduce((sum, r) => sum + Math.max(0, r.amount), 0);
   const monthExpenseTotal = monthTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  const monthIncomeTotal = monthTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + Math.max(0, t.amount), 0);
+  const monthIncomeTotal = cycleIncomeTotal;
   const monthGoal = StorageRepository.getMonthlyGoal(selectedMonthKey);
   const isGoalAchieved = monthGoal > 0 && monthTotal >= monthGoal;
   const progressPercent = monthGoal > 0 ? Math.round((monthTotal / monthGoal) * 100) : 0;
