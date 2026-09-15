@@ -36,7 +36,7 @@ export const HistoryScreen: React.FC = () => {
   const monthTransactions = allTransactions.filter((t) => t.date.startsWith(selectedMonthKey));
   const monthTotal = monthRecords.reduce((sum, r) => sum + Math.max(0, r.amount), 0);
   const monthExpenseTotal = monthTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  const monthIncomeTotal = monthTransactions.filter((t) => t.type === 'salary' || t.type === 'income').reduce((sum, t) => sum + Math.max(0, t.amount), 0);
+  const monthIncomeTotal = monthTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + Math.max(0, t.amount), 0);
   const monthGoal = StorageRepository.getMonthlyGoal(selectedMonthKey);
   const isGoalAchieved = monthGoal > 0 && monthTotal >= monthGoal;
   const progressPercent = monthGoal > 0 ? Math.round((monthTotal / monthGoal) * 100) : 0;
