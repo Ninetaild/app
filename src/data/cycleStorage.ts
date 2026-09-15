@@ -1,6 +1,6 @@
 import { SavingRecord } from '../types';
 
-export type CycleTransactionType = 'salary' | 'income' | 'expense' | 'saving';
+export type CycleTransactionType = 'income' | 'expense' | 'saving';
 
 export interface CycleTransaction {
   id: string;
@@ -64,7 +64,9 @@ export const CycleStorage = {
   getAllTransactions(): CycleTransaction[] {
     try {
       const raw = localStorage.getItem(TRANSACTION_KEY);
-      return raw ? JSON.parse(raw) : [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      // 기존에 저장된 '급여' 항목은 새 통합형 '수입'으로 그대로 이어갑니다.
+      return Array.isArray(parsed) ? parsed.map((item) => ({ ...item, type: item.type === 'salary' ? 'income' : item.type })) : [];
     } catch { return []; }
   },
 
@@ -74,7 +76,7 @@ export const CycleStorage = {
       id: input.id || `cycle_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       date: input.date,
       amount: normalizeAmount(input.type, input.amount),
-      memo: input.memo || (input.type === 'expense' ? '소비' : input.type === 'salary' ? '급여' : input.type === 'saving' ? '저축' : '수입'),
+      memo: input.memo || (input.type === 'expense' ? '소비' : input.type === 'saving' ? '저축' : '수입'),
       type: input.type,
       createdAt: Date.now(),
     };
@@ -120,7 +122,7 @@ export const CycleStorage = {
 };
 
 export function getCycleSettlementAmount(cycle: PayCycle, records: SavingRecord[], transactions: CycleTransaction[]): number {
-  const income = transactions.filter((item) => item.date >= cycle.startDate && item.date < cycle.endDate && (item.type === 'salary' || item.type === 'income')).reduce((sum, item) => sum + Math.max(0, item.amount), 0);
+  const income = transactions.filter((item) => item.date >= cycle.startDate && item.date < cycle.endDate && item.type === 'income').reduce((sum, item) => sum + Math.max(0, item.amount), 0);
   const spending = transactions.filter((item) => item.date >= cycle.startDate && item.date < cycle.endDate && item.type === 'expense').reduce((sum, item) => sum + Math.abs(item.amount), 0);
   const saving = records.filter((item) => item.date >= cycle.startDate && item.date < cycle.endDate).reduce((sum, item) => sum + Math.max(0, item.amount), 0);
   return Math.max(0, income - spending - saving);
