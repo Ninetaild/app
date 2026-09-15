@@ -17,7 +17,7 @@ export interface AppTechItem {
   description: string;
   category: string;
   referralCode: string;
-  url: string;
+  url?: string;
   referralUrl: string;
   isActive: boolean;
 }
