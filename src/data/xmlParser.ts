@@ -11,27 +11,15 @@ export const DEFAULT_APPTECH_XML = `<?xml version="1.0" encoding="UTF-8"?>
 const APPTECH_CACHE_KEY = 'saving_game_apptech_cache_data_v1';
 const APPTECH_CACHE_TIME_KEY = 'saving_game_apptech_cache_time_v1';
 
-function childText(element: Element, name: string): string {
-  return element.querySelector(name)?.textContent?.trim() || '';
-}
-
-function readValue(element: Element, attributeName: string, childName = attributeName): string {
-  return element.getAttribute(attributeName)?.trim() || childText(element, childName);
-}
+function childText(element: Element, name: string): string { return element.querySelector(name)?.textContent?.trim() || ''; }
+function readValue(element: Element, attributeName: string, childName = attributeName): string { return element.getAttribute(attributeName)?.trim() || childText(element, childName); }
 
 export function parseAppTechXml(xmlString: string): AppTechItem[] {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-  const parseError = xmlDoc.getElementsByTagName('parsererror');
-  if (parseError.length > 0) throw new Error('XML 파싱 오류: 올바른 XML 형식인지 확인해주세요.');
-
-  // 기존 <item ... /> 형식과 /xml/ 추천 목록 예시의 <app><name>...</name>...</app> 형식을 모두 지원한다.
-  const elements = [
-    ...Array.from(xmlDoc.getElementsByTagName('item')),
-    ...Array.from(xmlDoc.getElementsByTagName('app')),
-  ];
+  if (xmlDoc.getElementsByTagName('parsererror').length > 0) throw new Error('XML 파싱 오류: 올바른 XML 형식인지 확인해주세요.');
+  const elements = [...Array.from(xmlDoc.getElementsByTagName('item')), ...Array.from(xmlDoc.getElementsByTagName('app'))];
   const result: AppTechItem[] = [];
-
   elements.forEach((element, index) => {
     const id = readValue(element, 'id') || `app_${index}`;
     const name = readValue(element, 'name');
@@ -41,21 +29,12 @@ export function parseAppTechXml(xmlString: string): AppTechItem[] {
     const referralUrl = readValue(element, 'referralUrl', 'url');
     const isActiveValue = readValue(element, 'isActive');
     const isActive = isActiveValue === '' || isActiveValue.toLowerCase() === 'true';
-
-    if (isActive && name && description) {
-      result.push({ id, name, description, category, referralCode, referralUrl, isActive: true });
-    }
+    if (isActive && name && description) result.push({ id, name, description, category, referralCode, referralUrl, isActive: true });
   });
-
   return result;
 }
 
-export interface AppTechFetchResult {
-  items: AppTechItem[];
-  source: 'network' | 'cache' | 'default';
-  lastUpdated: string;
-  errorMessage?: string;
-}
+export interface AppTechFetchResult { items: AppTechItem[]; source: 'network' | 'cache' | 'default'; lastUpdated: string; errorMessage?: string; }
 
 export const AppTechRepository = {
   getCachedData(): { items: AppTechItem[]; time: string } | null {
@@ -63,24 +42,22 @@ export const AppTechRepository = {
       const data = localStorage.getItem(APPTECH_CACHE_KEY);
       const time = localStorage.getItem(APPTECH_CACHE_TIME_KEY);
       if (data) return { items: JSON.parse(data), time: time || '알 수 없음' };
-    } catch (e) {
-      console.error('Failed to read AppTech cache', e);
-    }
+    } catch (e) { console.error('Failed to read AppTech cache', e); }
     return null;
   },
-
   saveToCache(items: AppTechItem[]) {
     try {
       const nowStr = new Date().toLocaleString('ko-KR');
       localStorage.setItem(APPTECH_CACHE_KEY, JSON.stringify(items));
       localStorage.setItem(APPTECH_CACHE_TIME_KEY, nowStr);
-    } catch (e) {
-      console.error('Failed to write AppTech cache', e);
-    }
+    } catch (e) { console.error('Failed to write AppTech cache', e); }
   },
-
   async fetchAppTechItems(url: string): Promise<AppTechFetchResult> {
-    const targetUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+    // 기존 기본 URL을 사용하는 사용자는 새 XML 목록으로 자연스럽게 전환한다.
+    const configuredUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+    const targetUrl = configuredUrl === 'https://ninetaild.github.io/app/xml.xml'
+      ? 'https://ninetaild.github.io/app/xml/recommended-apps.xml'
+      : configuredUrl;
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -94,9 +71,7 @@ export const AppTechRepository = {
       const errorMsg = error instanceof Error ? error.message : '네트워크 통신 실패';
       console.warn('GitHub XML fetch failed, attempting local cache fallback:', errorMsg);
       const cached = this.getCachedData();
-      if (cached && cached.items.length > 0) {
-        return { items: cached.items, source: 'cache', lastUpdated: cached.time, errorMessage: `GitHub 연결 실패 (${errorMsg}). 저장된 로컬 캐시를 표시합니다.` };
-      }
+      if (cached && cached.items.length > 0) return { items: cached.items, source: 'cache', lastUpdated: cached.time, errorMessage: `GitHub 연결 실패 (${errorMsg}). 저장된 로컬 캐시를 표시합니다.` };
       const defaultItems = parseAppTechXml(DEFAULT_APPTECH_XML);
       return { items: defaultItems, source: 'default', lastUpdated: '내장 기본 데이터', errorMessage: `GitHub 연결 실패 (${errorMsg}). 앱 기본 추천 데이터를 표시합니다.` };
     }
