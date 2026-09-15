@@ -36,7 +36,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
   const payday = Number.isInteger(settings.payday) && settings.payday >= 1 && settings.payday <= 31 ? settings.payday : 25;
   const cycle = useMemo(() => getCycleForDate(today, payday), [today, payday]);
 
-  // 급여일은 파이의 기간을 바꾸지 않고, 급여일에 빈 파이를 저축으로 저장하는 자동 정산에만 사용합니다.
+  // 급여일에 맞춘 기간은 급여일 당일부터 다음 급여일 전날까지입니다.
   useEffect(() => {
     if (todayKey !== cycle.startDate) return;
     const previousCycle = getCycleForDate(getPreviousDate(today), payday);
@@ -46,13 +46,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
     CycleStorage.markSettled(previousCycle.startDate);
   }, [cycle.startDate, payday, records, today, todayKey, transactions]);
 
-  // 파이는 현재 달의 실제 항목만 합산합니다. payday는 여기에 영향을 주지 않습니다.
-  const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  const monthRecords = useMemo(() => records.filter((r) => r.date.startsWith(monthKey)), [records, monthKey]);
-  const monthTransactions = useMemo(() => transactions.filter((t) => t.date.startsWith(monthKey)), [transactions, monthKey]);
-  const totalIncome = monthTransactions.filter((t) => t.type === 'income').reduce((s, t) => s + Math.max(0, t.amount), 0);
-  const spending = monthTransactions.filter((t) => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
-  const saved = monthRecords.reduce((s, r) => s + Math.max(0, r.amount), 0);
+  // 홈의 파이와 최근 돈의 흐름은 급여일 기준 기간을 사용합니다.
+  const cycleRecords = useMemo(() => records.filter((r) => r.date >= cycle.startDate && r.date < cycle.endDate), [records, cycle]);
+  const cycleTransactions = useMemo(() => transactions.filter((t) => t.date >= cycle.startDate && t.date < cycle.endDate), [transactions, cycle]);
+  const totalIncome = cycleTransactions.filter((t) => t.type === 'income').reduce((s, t) => s + Math.max(0, t.amount), 0);
+  const spending = cycleTransactions.filter((t) => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
+  const saved = cycleRecords.reduce((s, r) => s + Math.max(0, r.amount), 0);
   const available = Math.max(0, totalIncome - saved - spending);
   const savedPct = totalIncome > 0 ? Math.min(100, (saved / totalIncome) * 100) : 0;
   const spentPct = totalIncome > 0 ? Math.min(Math.max(0, 100 - savedPct), (spending / totalIncome) * 100) : 0;
@@ -63,7 +62,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
   const rankInfo = LevelCalculator.calculateLevelInfo(annualSavings);
   const rankEmoji = RANK_EMOJI[Math.min(6, Math.max(0, rankInfo.level))] || '⚪';
   const monthLabel = `${today.getMonth() + 1}월`;
-  const transactionRows = [...monthTransactions.map((t) => ({ id: t.id, date: t.date, memo: t.memo, amount: t.amount, type: t.type as CycleTransactionType })), ...monthRecords.map((r) => ({ id: r.id, date: r.date, memo: r.memo, amount: r.amount, type: 'saving' as const }))].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
+  const transactionRows = [...cycleTransactions.map((t) => ({ id: t.id, date: t.date, memo: t.memo, amount: t.amount, type: t.type as CycleTransactionType })), ...cycleRecords.map((r) => ({ id: r.id, date: r.date, memo: r.memo, amount: r.amount, type: 'saving' as const }))].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
   const pieDetails: Record<PieKind, { pct: number; amount: number }> = { saving: { pct: savedPct, amount: saved }, spending: { pct: spentPct, amount: spending }, remaining: { pct: remainingPct, amount: available } };
   const segment = (kind: PieKind, width: number, className: string) => width > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${width}%` }} onMouseEnter={() => setHoveredPie(kind)} onMouseLeave={() => setHoveredPie(null)} className={`h-full cursor-help transition-[filter] hover:brightness-95 ${className}`} aria-label={`${PIE_LABEL[kind]} ${Math.round(width)}%`} />;
 
@@ -85,7 +84,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
   };
 
   return <div className="space-y-4 pb-20">
-    <div className="flex items-center justify-between pt-1 pb-1"><div className="flex items-center gap-2"><Calendar className="w-5 h-5 text-stone-500" /><h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">{monthLabel}</h1></div><button type="button" onClick={changePayday} className="inline-flex items-center gap-1.5 bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-800 border border-stone-200 hover:border-emerald-200 px-3 py-1.5 rounded-full text-xs font-bold transition-colors"><WalletCards className="w-3.5 h-3.5" />급여일 {payday}일</button></div>
+    <div className="flex items-center justify-between pt-1 pb-1"><div className="flex items-center gap-2"><Calendar className="w-5 h-5 text-stone-500" /><div><h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">{monthLabel}</h1><div className="text-[10px] text-stone-400 font-semibold">{cycle.startDate.slice(5).replace('-', '/')} ~ {new Date(new Date(cycle.endDate).getTime() - 86400000).toISOString().slice(5).replace('-', '/')}</div></div></div><button type="button" onClick={changePayday} className="inline-flex items-center gap-1.5 bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-800 border border-stone-200 hover:border-emerald-200 px-3 py-1.5 rounded-full text-xs font-bold transition-colors"><WalletCards className="w-3.5 h-3.5" />급여일 {payday}일</button></div>
 
     <div className="p-5 sm:p-6 bg-white rounded-3xl border border-stone-200 shadow-sm">
       <div className="flex items-center justify-between mb-4"><div><div className="text-xs font-bold text-stone-400 uppercase tracking-wider">이번 달 파이 · 수입</div><div className="text-2xl sm:text-3xl font-black text-stone-900 mt-1">{money(totalIncome)}</div></div><div className="text-right"><div className="text-[11px] text-stone-400">현재 남은 금액</div><div className="text-lg font-black text-emerald-700">{money(available)}</div></div></div>
