@@ -1,0 +1,6 @@
+{
+  "name": "저축 게임 가계부",
+  "description": "저축액을 기록하고 목표를 관리하는 오프라인 우선 로컬 저장 저축 가계부 앱",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

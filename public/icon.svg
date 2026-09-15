@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="coin" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#eab308"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#bg)"/>
+  <!-- Piggy Bank body outline & fill -->
+  <g transform="translate(64, 74) scale(0.75)" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M190 80c-60 0-110 40-120 95-25 5-45 25-45 50 0 15 8 28 20 36 0 10 2 20 5 29l-20 60h55l15-30c25 15 55 25 90 25h30l15 30h55l-20-60c30-15 55-40 65-75h30c15 0 25-10 25-25s-10-25-25-25h-25c0-45-35-85-80-85z" fill="#ffffff" fill-opacity="0.15"/>
+    <circle cx="130" cy="180" r="14" fill="#ffffff"/>
+    <!-- Coin Slot -->
+    <path d="M170 80h60" stroke="#fde047" stroke-width="20"/>
+  </g>
+  <!-- Gold coin dropping into slot -->
+  <circle cx="256" cy="140" r="46" fill="url(#coin)" stroke="#ffffff" stroke-width="8"/>
+  <text x="256" y="156" font-size="44" font-weight="900" font-family="sans-serif" fill="#78350f" text-anchor="middle">₩</text>
+</svg>
