@@ -24,7 +24,8 @@ export const HistoryScreen: React.FC = () => {
     const payday = StorageRepository.getSettings().payday;
     const today = new Date();
     const currentCycle = getCycleForDate(today, payday);
-    const cycleStarts = new Set<string>([currentCycle.startDate]);
+    const previousCycle = getCycleForDate(new Date(`${currentCycle.startDate}T12:00:00`).setDate ? new Date(new Date(`${currentCycle.startDate}T12:00:00`).getTime() - 86400000) : today, payday);
+    const cycleStarts = new Set<string>([currentCycle.startDate, previousCycle.startDate]);
     records.forEach((r) => cycleStarts.add(getCycleForDate(new Date(`${r.date}T00:00:00`), payday).startDate));
     transactions.forEach((t) => cycleStarts.add(getCycleForDate(new Date(`${t.date}T00:00:00`), payday).startDate));
     setAllRecords(records); setAllTransactions(transactions);
