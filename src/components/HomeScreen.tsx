@@ -19,7 +19,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
   const [randomAppTech, setRandomAppTech] = useState<AppTechItem>(FALLBACK_APP);
   const loadData = () => { setSettings(StorageRepository.getSettings()); setRecords(StorageRepository.getAllRecords()); setTransactions(CycleStorage.getAllTransactions()); };
   useEffect(() => { loadData(); const a = StorageRepository.subscribe(loadData); const b = CycleStorage.subscribe(loadData); return () => { a(); b(); }; }, []);
-  useEffect(() => { let mounted = true; AppTechRepository.fetchAppTechItems(settings.customXmlUrl).then((result) => { const active = result.items.filter((item) => item.isActive && item.name && item.description); if (mounted && active.length) setRandomAppTech(active[Math.floor(Math.random() * active.length)]); }).catch(() => { if (mounted) setRandomAppTech(FALLBACK_APP); }); return () => { mounted = false; }; }, [settings.customXmlUrl]);
+  useEffect(() => { let mounted = true; const url = settings.customXmlUrl || undefined; AppTechRepository.fetchAppTechItems(url ? `${url}${url.includes('?') ? '&' : '?'}_refresh=${Date.now()}` : undefined).then((result) => { const active = result.items.filter((item) => item.isActive && item.name && item.description); if (mounted && active.length) setRandomAppTech(active[Math.floor(Math.random() * active.length)]); }).catch(() => { if (mounted) setRandomAppTech(FALLBACK_APP); }); return () => { mounted = false; }; }, [settings.customXmlUrl]);
 
   const today = useMemo(() => new Date(), []);
   const payday = Number.isInteger(settings.payday) && settings.payday >= 1 && settings.payday <= 31 ? settings.payday : 25;
