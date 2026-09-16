@@ -27,11 +27,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
   const cycleTransactions = useMemo(() => transactions.filter((t) => t.date >= cycle.startDate && t.date < cycle.endDate), [transactions, cycle]);
   const totalIncome = cycleTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + Math.max(0, t.amount), 0);
   const spending = cycleTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  // 급여일이 지나면 빈 파이는 저축으로 편입합니다. 저축은 항상 수입 - 소비로 계산합니다.
-  const saved = Math.max(0, totalIncome - spending);
-  const spentForBar = totalIncome > 0 ? Math.min(totalIncome, spending) : 0;
-  const savedPct = totalIncome > 0 ? Math.max(0, (saved / totalIncome) * 100) : 0;
-  const spentPct = totalIncome > 0 ? Math.min(100, (spentForBar / totalIncome) * 100) : 0;
+  // 진행 중인 급여기간은 사용자가 입력한 저축을 고정 저축 파이로 사용합니다. 수입과 저축은 동일하지 않습니다.
+  const fixedSaving = records.filter((r) => r.date >= cycle.startDate && r.date < cycle.endDate).reduce((sum, r) => sum + Math.max(0, r.amount), 0);
+  const fixedSavingForPie = totalIncome > 0 ? Math.min(totalIncome, fixedSaving) : 0;
+  const spendingForPie = totalIncome > 0 ? Math.min(Math.max(0, totalIncome - fixedSavingForPie), spending) : 0;
+  const savedPct = totalIncome > 0 ? (fixedSavingForPie / totalIncome) * 100 : 0;
+  const spentPct = totalIncome > 0 ? (spendingForPie / totalIncome) * 100 : 0;
 
   const currentYear = today.getFullYear();
   const yearTransactions = useMemo(() => transactions.filter((t) => t.date.startsWith(`${currentYear}-`)), [transactions, currentYear]);
@@ -40,7 +41,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
   const annualSavings = Math.max(0, annualIncome - annualExpense);
   const rankInfo = LevelCalculator.calculateLevelInfo(annualSavings);
   const rankEmoji = RANK_EMOJI[Math.min(6, Math.max(0, rankInfo.level))] || '⚪';
-  const monthLabel = `${today.getMonth() + 1}월`;
+  const monthLabel = `${Number(cycle.startDate.slice(5, 7))}월`;
   const cycleEndDisplay = dateKey(getPreviousDate(new Date(`${cycle.endDate}T00:00:00`))).slice(5).replace('-', '/');
   const transactionRows = [...cycleTransactions.map((t) => ({ id: t.id, date: t.date, memo: t.memo, amount: t.amount, type: t.type as CycleTransactionType })), ...records.filter((r) => r.date >= cycle.startDate && r.date < cycle.endDate).map((r) => ({ id: r.id, date: r.date, memo: r.memo, amount: r.amount, type: 'saving' as const }))].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6);
   const segment = (width: number, className: string) => width > 0 && <motion.div initial={{ width: 0 }} animate={{ width: `${width}%` }} className={`h-full transition-[filter] hover:brightness-95 ${className}`} />;
@@ -56,9 +57,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onOpenAddModal, onEditRe
     <div className="flex items-center justify-between pt-1 pb-1"><div className="flex items-center gap-2"><Calendar className="w-5 h-5 text-stone-500" /><div><h1 className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">{monthLabel}</h1><div className="text-[10px] text-stone-400 font-semibold">{cycle.startDate.slice(5).replace('-', '/')} ~ {cycleEndDisplay}</div></div></div><button type="button" onClick={changePayday} className="inline-flex items-center gap-1.5 bg-stone-100 hover:bg-emerald-50 text-stone-700 hover:text-emerald-800 border border-stone-200 hover:border-emerald-200 px-3 py-1.5 rounded-full text-xs font-bold transition-colors"><WalletCards className="w-3.5 h-3.5" />급여일 {payday}일</button></div>
 
     <div className="p-5 sm:p-6 bg-white rounded-3xl border border-stone-200 shadow-sm">
-      <div className="flex items-center justify-between mb-4"><div><div className="text-xs font-bold text-stone-400 uppercase tracking-wider">이번 급여기간 · 수입</div><div className="text-2xl sm:text-3xl font-black text-stone-900 mt-1">{money(totalIncome)}</div></div><div className="text-right"><div className="text-[11px] text-stone-400">현재 저축</div><div className="text-lg font-black text-emerald-700">{money(saved)}</div></div></div>
+      <div className="flex items-center justify-between mb-4"><div><div className="text-xs font-bold text-stone-400 uppercase tracking-wider">이번 급여기간 · 수입</div><div className="text-2xl sm:text-3xl font-black text-stone-900 mt-1">{money(totalIncome)}</div></div><div className="text-right"><div className="text-[11px] text-stone-400">현재 저축</div><div className="text-lg font-black text-emerald-700">{money(fixedSaving)}</div></div></div>
       <div className="relative"><div className="w-full h-8 rounded-full bg-stone-100 border border-stone-200 overflow-hidden flex">{segment(savedPct, 'bg-emerald-500')}{segment(spentPct, 'bg-stone-400')}</div></div>
-      <div className="grid grid-cols-2 gap-2 mt-3"><div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-100"><div className="text-[10px] text-emerald-700 font-semibold">저축</div><div className="text-sm font-black text-emerald-800 mt-0.5">{money(saved)}</div></div><div className="p-2.5 rounded-2xl bg-stone-100 border border-stone-200"><div className="text-[10px] text-stone-500 font-semibold">소비</div><div className="text-sm font-black text-stone-800 mt-0.5">{money(spending)}</div></div></div>
+      <div className="grid grid-cols-2 gap-2 mt-3"><div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-100"><div className="text-[10px] text-emerald-700 font-semibold">저축</div><div className="text-sm font-black text-emerald-800 mt-0.5">{money(fixedSaving)}</div></div><div className="p-2.5 rounded-2xl bg-stone-100 border border-stone-200"><div className="text-[10px] text-stone-500 font-semibold">소비</div><div className="text-sm font-black text-stone-800 mt-0.5">{money(spending)}</div></div></div>
       <div className="grid grid-cols-3 gap-2 mt-4"><button onClick={() => onOpenAddModal('saving')} className="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1"><PiggyBank className="w-4 h-4" />저축</button><button onClick={() => onOpenAddModal('income')} className="py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-1"><WalletCards className="w-4 h-4" />수입</button><button onClick={() => onOpenAddModal('expense')} className="py-2.5 rounded-xl bg-stone-800 hover:bg-stone-900 text-white text-xs font-bold flex items-center justify-center gap-1"><ArrowDownRight className="w-4 h-4" />소비</button></div>
     </div>
 
