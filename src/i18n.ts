@@ -22,9 +22,11 @@ export function translateText(text: string, language: Language): string {
   if (language === 'ko') return text;
   let result = text;
   result = result.replace(/^급여일 (\d+)일$/, language === 'ja' ? '給料日 $1日' : 'Payday $1');
-  result = result.replace(/^(\d{4})년 (\d+)원$/, language === 'ja' ? '$1年 $2ウォン' : '$1 · $2 KRW');
-  result = result.replace(/^(\d+)월$/, language === 'ja' ? '$1月' : '$1');
+  result = result.replace(/^(\d{4})년 (\d{1,2})월$/, language === 'ja' ? '$1年$2月' : '$1-$2');
+  result = result.replace(/^(\d{4})년 급여기간별$/, language === 'ja' ? '$1年 給与期間別' : '$1 · By pay cycle');
+  result = result.replace(/^(수입|소비|고정 저축) (입력|수정)$/, (m, type, action) => { const jaType = type === '수입' ? '収入' : type === '소비' ? '支出' : '固定貯金'; const enType = type === '수입' ? 'Income' : type === '소비' ? 'Spending' : 'Fixed savings'; return language === 'ja' ? `${jaType}${action === '입력' ? 'を入力' : 'を編集'}` : `${action === '입력' ? 'Add' : 'Edit'} ${enType}`; });
   result = result.replace(/^(\d+)년$/, language === 'ja' ? '$1年' : '$1');
+  result = result.replace(/^(\d+)월$/, language === 'ja' ? '$1月' : '$1');
   result = result.replace(/^업데이트: /, language === 'ja' ? '更新: ' : 'Updated: ');
   result = result.replace(/^최근 백업: /, language === 'ja' ? '最新のバックアップ: ' : 'Latest backup: ');
   result = result.replace(/^달성률 (\d+)%$/, language === 'ja' ? '達成率 $1%' : 'Progress $1%');
