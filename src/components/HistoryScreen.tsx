@@ -9,6 +9,12 @@ type ViewMode = 'month' | 'year';
 const money = (value: number) => formatCurrencyKRW(Math.max(0, Math.round(value)));
 const cycleStartMonthDisplay = (cycleStart: string) => formatMonthDisplay(cycleStart.slice(0, 7));
 
+const getCycleStartForMonth = (year: number, monthIndex: number, payday: number) => {
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  const safePayday = Math.min(Math.max(1, payday), lastDay);
+  return getCycleForDate(new Date(year, monthIndex, safePayday, 12), payday);
+};
+
 export const HistoryScreen: React.FC = () => {
   const [mode, setMode] = useState<ViewMode>('month');
   const [selectedCycleStart, setSelectedCycleStart] = useState('');
@@ -31,9 +37,16 @@ export const HistoryScreen: React.FC = () => {
     setAllRecords(records); setAllTransactions(transactions);
     setAvailableCycles([...cycleStarts].filter(Boolean).sort().reverse());
     setSelectedCycleStart((current) => current && cycleStarts.has(current) ? current : currentCycle.startDate);
-    const years = new Set<number>([today.getFullYear()]);
-    [...records.map((r) => r.date.slice(0, 4)), ...transactions.map((t) => t.date.slice(0, 4))].forEach((y) => { const n = Number(y); if (Number.isInteger(n)) years.add(n); });
+
+    // 년별 조회도 달력 월이 아니라 급여기간의 시작 월을 기준으로 표시합니다.
+    // 예: 급여일 25일이면 8월 급여기간 = 8/25 ~ 9/24 입니다.
+    const years = new Set<number>([currentCycle.startDate.slice(0, 4), previousCycle.startDate.slice(0, 4)].map(Number));
+    [...records.map((r) => getCycleForDate(new Date(`${r.date}T00:00:00`), payday).startDate), ...transactions.map((t) => getCycleForDate(new Date(`${t.date}T00:00:00`), payday).startDate)].forEach((start) => {
+      const n = Number(start.slice(0, 4));
+      if (Number.isInteger(n)) years.add(n);
+    });
     setAvailableYears([...years].sort((a, b) => b - a));
+    setSelectedYear((current) => years.has(current) ? current : currentCycle.startDate.slice(0, 4) as unknown as number);
   };
   useEffect(() => { loadData(); const a = StorageRepository.subscribe(loadData); const b = CycleStorage.subscribe(loadData); return () => { a(); b(); }; }, []);
 
@@ -89,6 +102,6 @@ export const HistoryScreen: React.FC = () => {
     {mode === 'month' ? <>
       <div className="bg-white rounded-3xl border border-stone-200 p-5 shadow-xs"><div className="flex items-center justify-between mb-3"><h2 className="text-sm font-bold text-stone-800 flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-600" />저축 내역 ({cycleRecords.length}건)</h2><span className="text-[10px] text-stone-400">개별 기록</span></div>{cycleRecords.length === 0 ? <div className="text-center py-8 text-stone-400"><AlertCircle className="w-7 h-7 mx-auto mb-2 text-stone-300" /><p className="text-xs">기록된 저축 내역이 없습니다.</p></div> : <div className="divide-y divide-stone-100">{cycleRecords.map((rec) => <div key={rec.id} className="py-3 px-1 flex items-center justify-between"><div className="min-w-0"><div className="text-xs font-bold text-stone-800 truncate">{rec.memo}</div><div className="text-[11px] text-stone-400">{formatDateKorean(rec.date)}</div></div><div className="text-right shrink-0 ml-3"><div className="text-sm font-black text-emerald-700">+{formatCurrencyKRW(rec.amount)}</div><div className="text-[10px] text-stone-400">+{LevelCalculator.savingsToXp(rec.amount)} XP</div></div></div>)}</div>}</div>
       <div className="bg-white rounded-3xl border border-stone-200 p-5 shadow-xs"><div className="flex items-center justify-between mb-3"><h2 className="text-sm font-bold text-stone-800 flex items-center gap-1.5"><TrendingDown className="w-4 h-4 text-stone-600" />소비 내역 ({targetTransactions.filter((t) => t.type === 'expense').length}건)</h2><span className="text-[10px] text-stone-400">개별 기록</span></div>{targetTransactions.filter((t) => t.type === 'expense').length === 0 ? <div className="text-center py-8 text-stone-400"><p className="text-xs">기록된 소비 내역이 없습니다.</p></div> : <div className="divide-y divide-stone-100">{targetTransactions.filter((t) => t.type === 'expense').map((tx) => <div key={tx.id} className="py-3 px-1 flex items-center justify-between"><div className="min-w-0"><div className="text-xs font-bold text-stone-800 truncate">{tx.memo}</div><div className="text-[11px] text-stone-400">{formatDateKorean(tx.date)}</div></div><div className="text-sm font-black text-stone-700 shrink-0 ml-3">-{formatCurrencyKRW(Math.abs(tx.amount))}</div></div>)}</div>}</div>
-    </> : <div className="bg-white rounded-3xl border border-stone-200 p-5 shadow-xs"><h2 className="text-sm font-bold text-stone-800 mb-3">{selectedYear}년 월별</h2><div className="divide-y divide-stone-100">{Array.from({ length: 12 }, (_, index) => index + 1).map((month) => { const key = `${selectedYear}-${String(month).padStart(2, '0')}`; const tx = allTransactions.filter((t) => t.date.startsWith(key)); const i = tx.filter((t) => t.type === 'income').reduce((s, t) => s + Math.max(0, t.amount), 0); const e = tx.filter((t) => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0); return <div key={key} className="py-2.5 flex items-center justify-between"><span className="text-xs font-bold text-stone-700">{month}월</span><div className="flex gap-3 text-[11px]"><span className="text-stone-500">수입 {money(i)}</span><span className="text-stone-500">소비 {money(e)}</span><span className="font-black text-emerald-700">저축 {money(Math.max(0, i - e))}</span></div></div>; })}</div></div>}
+    </> : <div className="bg-white rounded-3xl border border-stone-200 p-5 shadow-xs"><h2 className="text-sm font-bold text-stone-800 mb-3">{selectedYear}년 급여기간별</h2><div className="divide-y divide-stone-100">{Array.from({ length: 12 }, (_, index) => index).map((monthIndex) => { const cycle = getCycleStartForMonth(selectedYear, monthIndex, payday); const tx = allTransactions.filter((t) => t.date >= cycle.startDate && t.date < cycle.endDate); const i = tx.filter((t) => t.type === 'income').reduce((s, t) => s + Math.max(0, t.amount), 0); const e = tx.filter((t) => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0); return <div key={cycle.startDate} className="py-2.5 flex items-center justify-between"><div><span className="text-xs font-bold text-stone-700">{monthIndex + 1}월</span><span className="text-[10px] text-stone-400 ml-1.5">{cycle.startDate.slice(5).replace('-', '/')} ~ {cycle.endDate.slice(5).replace('-', '/')}</span></div><div className="flex gap-3 text-[11px]"><span className="text-stone-500">수입 {money(i)}</span><span className="text-stone-500">소비 {money(e)}</span><span className="font-black text-emerald-700">저축 {money(Math.max(0, i - e))}</span></div></div>; })}</div></div>}
   </div>;
 };
