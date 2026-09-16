@@ -10,7 +10,7 @@
   <app id="Life_planet" isActive="true">
     <name>라이프플래닛</name>
     <category>만보기</category>
-    <description>만보 걷고 버튼 클릭만으로 기프티콘 구매해요</description>
+    <description>만보 걷고 하루 한 번 버튼 클릭만으로 기프티콘 구매해요</description>
     <url>https://m.lifeplanet.co.kr:444/bridge/bm/BM07000S.dev?shareCd=20231098212</url>
   </app>
 </recommendedApps>
