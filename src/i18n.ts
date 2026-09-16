@@ -1,88 +1,28 @@
 export type Language = 'ko' | 'en' | 'ja';
-
 const STORAGE_KEY = 'saving_game_language_v1';
-
 const translations: Record<Language, Record<string, string>> = {
   ko: {},
   en: {
-    '저축 가계부': 'Savings Ledger', '시트 백업': 'Sheets Backup', '넓게 보기': 'Wide View', '스마트폰 뷰': 'Phone View',
-    '홈': 'Home', '히스토리': 'History', '저축 히스토리': 'Savings History', '월별': 'Monthly', '년별': 'Yearly',
-    '급여일': 'Payday', '일': '', '이번 급여기간 · 수입': 'Current pay cycle · Income', '현재 저축': 'Current savings',
-    '저축': 'Savings', '수입': 'Income', '소비': 'Spending', '고정 저축': 'Fixed savings', '최근 돈의 흐름': 'Recent money flow',
-    '전체보기': 'View all', '아직 기록이 없어요. 수입부터 입력해 보세요.': 'No records yet. Start by adding your income.',
-    '연간 랭크': 'Yearly rank', '저축 레벨': 'Savings level', '오늘의 추천 앱': "Today's recommended app", '앱 자세히 보기 ↗': 'View app ↗',
-    'Google Sheets 백업': 'Google Sheets Backup', '필요할 때만 직접 백업합니다': 'Back up manually whenever you need to',
-    'Google Sheets에 백업하기': 'Back up to Google Sheets', '저장된 백업 시트가 있으면 그 시트에 현재 데이터를 덮어쓰고, 처음 백업할 때만 새 Google Sheets를 만듭니다.': 'If a backup sheet is already saved, the current data will overwrite that sheet. A new sheet is created only for the first backup.',
-    '백업 중...': 'Backing up...', '백업하기': 'Back up', 'Google 로그인이나 데이터 변경만으로는 자동 백업하지 않습니다.': 'Signing in to Google or changing your data does not trigger an automatic backup.',
-    'Sheets에서 복구하기': 'Restore from Sheets', '백업해 둔 Google Sheets의 주소를 입력하면 급여일, 수입, 저축, 소비, 목표 저축액을 이 기기로 복구합니다.': 'Enter the URL of a backed-up Google Sheet to restore your payday, income, savings, spending, and savings goals to this device.',
-    '복구 중...': 'Restoring...', '복구하기': 'Restore', '최근 백업': 'Latest backup', '백업 시트 있음': 'Backup sheet connected', '아직 없음': 'None yet',
-    '최근 백업 시트 열기': 'Open latest backup sheet', '저장된 연결 정보 지우기': 'Clear saved connection', '취소': 'Cancel', '삭제': 'Delete',
-    '저축 기록 수정': 'Edit savings record', '입력': 'Entry', '수정': 'Edit', '수정 완료': 'Save changes', '돈의 흐름을 개별 항목으로 기록합니다.': 'Record each part of your money flow separately.',
-    '금액 (원)': 'Amount', '날짜': 'Date', '메모': 'Note', '이 기록을 삭제할까요?': 'Delete this record?',
-    '저축 목표': 'Savings goal', '목표 달성': 'Goal reached', '눌러서 목표 수정': 'Tap to edit goal', '목표 금액': 'Goal amount', '달성률': 'Progress',
-    '저축 내역': 'Savings history', '개별 기록': 'Individual records', '기록된 저축 내역이 없습니다.': 'No savings records yet.', '소비 내역': 'Spending history', '기록된 소비 내역이 없습니다.': 'No spending records yet.',
-    '급여기간별': 'By pay cycle', '저축 = 수입 − 소비': 'Savings = income − spending', '현재 급여기간 · 저축 기록 기준': 'Current pay cycle · Based on savings records',
-    '네트워크 안내:': 'Network notice:', '가계부 저축 기록 및 레벨업 기능은 인터넷 연결 없이도 안전하게 작동합니다.': 'Savings records and level-up features work safely without an internet connection.',
-    'GitHub 최신 동기화': 'Latest GitHub sync', '오프라인 로컬 캐시': 'Offline local cache', '기본 내장 데이터': 'Built-in default data', 'GitHub XML 다시 동기화': 'Sync GitHub XML again', '새로고침': 'Refresh',
-    '앱테크 추천': 'Recommended savings apps', '소소하게 포인트를 모아 저축 부수입을 만드는 추천 서비스 목록': 'A selection of services for earning small rewards to put toward savings', '출처: GitHub XML': 'Source: GitHub XML',
-    '추천인 코드:': 'Referral code:', '코드 복사': 'Copy code', '복사됨': 'Copied', '가입 및 시작하기': 'Join and get started', '투명성 고지 및 안내': 'Transparency notice',
-    '앱테크 추천은 부가적인 편의 기능이며, 본 가계부 앱의 모든 핵심 저축 및 레벨업 기능은 인터넷 연결 및 앱테크 여부와 무관하게 100% 로컬에서 작동합니다.': 'App recommendations are an optional convenience feature. All core savings and level-up features work entirely on this device, regardless of internet access or whether you use any recommended service.',
-    '위 추천 링크 및 추천인 코드를 통해 가입하시는 경우, 앱 운영자에게 소정의 보상(포인트, 리워드)이 발생할 수 있습니다.': 'If you join through a recommended link or referral code, the app operator may receive a small reward, such as points or other rewards.',
+    '저축 가계부': 'Savings Ledger', '시트 백업': 'Sheets Backup', '넓게 보기': 'Wide View', '스마트폰 뷰': 'Phone View', '홈': 'Home', '히스토리': 'History', '저축 히스토리': 'Savings History', '월별': 'Monthly', '년별': 'Yearly', '급여일': 'Payday', '이번 급여기간 · 수입': 'Current pay cycle · Income', '현재 저축': 'Current savings', '저축': 'Savings', '수입': 'Income', '소비': 'Spending', '고정 저축': 'Fixed savings', '최근 돈의 흐름': 'Recent money flow', '전체보기': 'View all', '아직 기록이 없어요. 수입부터 입력해 보세요.': 'No records yet. Start by adding your income.', '연간 랭크': 'Yearly rank', '오늘의 추천 앱': "Today's recommended app", '앱 자세히 보기 ↗': 'View app ↗', 'Google Sheets 백업': 'Google Sheets Backup', '필요할 때만 직접 백업합니다': 'Back up manually whenever you need to', 'Google Sheets에 백업하기': 'Back up to Google Sheets', '저장된 백업 시트가 있으면 그 시트에 현재 데이터를 덮어쓰고, 처음 백업할 때만 새 Google Sheets를 만듭니다.': 'If a backup sheet is already saved, the current data will overwrite that sheet. A new sheet is created only for the first backup.', '백업 중...': 'Backing up...', '백업하기': 'Back up', 'Google 로그인이나 데이터 변경만으로는 자동 백업하지 않습니다.': 'Signing in to Google or changing your data does not trigger an automatic backup.', 'Sheets에서 복구하기': 'Restore from Sheets', '백업해 둔 Google Sheets의 주소를 입력하면 급여일, 수입, 저축, 소비, 목표 저축액을 이 기기로 복구합니다.': 'Enter the URL of a backed-up Google Sheet to restore your payday, income, savings, spending, and savings goals to this device.', '복구 중...': 'Restoring...', '복구하기': 'Restore', '최근 백업': 'Latest backup', '백업 시트 있음': 'Backup sheet connected', '아직 없음': 'None yet', '최근 백업 시트 열기': 'Open latest backup sheet', '저장된 연결 정보 지우기': 'Clear saved connection', '취소': 'Cancel', '삭제': 'Delete', '저축 기록 수정': 'Edit savings record', '수정 완료': 'Save changes', '돈의 흐름을 개별 항목으로 기록합니다.': 'Record each part of your money flow separately.', '금액 (원)': 'Amount (KRW)', '날짜': 'Date', '메모': 'Note', '이 기록을 삭제할까요?': 'Delete this record?', '저축 목표': 'Savings goal', '목표 달성': 'Goal reached', '눌러서 목표 수정': 'Tap to edit goal', '목표 금액': 'Goal amount', '저축 내역': 'Savings history', '개별 기록': 'Individual records', '기록된 저축 내역이 없습니다.': 'No savings records yet.', '소비 내역': 'Spending history', '기록된 소비 내역이 없습니다.': 'No spending records yet.', '급여기간별': 'By pay cycle', '저축 = 수입 − 소비': 'Savings = income − spending', '현재 급여기간 · 저축 기록 기준': 'Current pay cycle · Based on savings records', '네트워크 안내:': 'Network notice:', '가계부 저축 기록 및 레벨업 기능은 인터넷 연결 없이도 안전하게 작동합니다.': 'Savings records and level-up features work safely without an internet connection.', 'GitHub 최신 동기화': 'Latest GitHub sync', '오프라인 로컬 캐시': 'Offline local cache', '기본 내장 데이터': 'Built-in default data', 'GitHub XML 다시 동기화': 'Sync GitHub XML again', '새로고침': 'Refresh', '앱테크 추천': 'Recommended savings apps', '소소하게 포인트를 모아 저축 부수입을 만드는 추천 서비스 목록': 'A selection of services for earning small rewards to put toward savings', '출처: GitHub XML': 'Source: GitHub XML', '추천인 코드:': 'Referral code:', '코드 복사': 'Copy code', '복사됨': 'Copied', '가입 및 시작하기': 'Join and get started', '투명성 고지 및 안내': 'Transparency notice', '위 추천 링크 및 추천인 코드를 통해 가입하시는 경우, 앱 운영자에게 소정의 보상(포인트, 리워드)이 발생할 수 있습니다.': 'If you join through a recommended link or referral code, the app operator may receive a small reward, such as points or other rewards.', '앱테크 추천은 부가적인 편의 기능이며, 본 가계부 앱의 모든 핵심 저축 및 레벨업 기능은 인터넷 연결 및 앱테크 여부와 무관하게 100% 로컬에서 작동합니다.': 'App recommendations are an optional convenience feature. All core savings and level-up features work entirely on this device, regardless of internet access or whether you use any recommended service.'
   },
   ja: {
-    '저축 가계부': '貯金家計簿', '시트 백업': 'シートにバックアップ', '넓게 보기': '広く表示', '스마트폰 뷰': 'スマートフォン表示',
-    '홈': 'ホーム', '히스토리': '履歴', '저축 히스토리': '貯金の履歴', '월별': '月別', '년별': '年別',
-    '급여일': '給料日', '일': '', '이번 급여기간 · 수입': '今回の給与期間 · 収入', '현재 저축': '現在の貯金',
-    '저축': '貯金', '수입': '収入', '소비': '支出', '고정 저축': '固定貯金', '최근 돈의 흐름': '最近のお金の流れ',
-    '전체보기': 'すべて見る', '아직 기록이 없어요. 수입부터 입력해 보세요.': 'まだ記録がありません。まずは収入を入力してみましょう。',
-    '연간 랭크': '年間ランク', '저축 레벨': '貯金レベル', '오늘의 추천 앱': '今日のおすすめアプリ', '앱 자세히 보기 ↗': 'アプリを見る ↗',
-    'Google Sheets 백업': 'Google Sheetsにバックアップ', '필요할 때만 직접 백업합니다': '必要なときに手動でバックアップします',
-    'Google Sheets에 백업하기': 'Google Sheetsにバックアップ', '저장된 백업 시트가 있으면 그 시트에 현재 데이터를 덮어쓰고, 처음 백업할 때만 새 Google Sheets를 만듭니다.': '保存済みのバックアップシートがあれば、そこに現在のデータを上書きします。初回のみ新しいシートを作成します。',
-    '백업 중...': 'バックアップ中…', '백업하기': 'バックアップする', 'Google 로그인이나 데이터 변경만으로는 자동 백업하지 않습니다.': 'Googleへのログインやデータの変更だけでは、自動バックアップされません。',
-    'Sheets에서 복구하기': 'Sheetsから復元', '백업해 둔 Google Sheets의 주소를 입력하면 급여일, 수입, 저축, 소비, 목표 저축액을 이 기기로 복구합니다.': 'バックアップしたGoogle SheetsのURLを入力すると、給料日・収入・貯金・支出・貯金目標をこの端末に復元できます。',
-    '복구 중...': '復元中…', '복구하기': '復元する', '최근 백업': '最新のバックアップ', '백업 시트 있음': 'バックアップシートあり', '아직 없음': 'まだありません',
-    '최근 백업 시트 열기': '最新のバックアップシートを開く', '저장된 연결 정보 지우기': '保存した接続情報を削除', '취소': 'キャンセル', '삭제': '削除',
-    '저축 기록 수정': '貯金記録を編集', '입력': '入力', '수정': '編集', '수정 완료': '変更を保存', '돈의 흐름을 개별 항목으로 기록합니다.': 'お金の流れを項目ごとに記録します。',
-    '금액 (원)': '金額（ウォン）', '날짜': '日付', '메모': 'メモ', '이 기록을 삭제할까요?': 'この記録を削除しますか？',
-    '저축 목표': '貯金目標', '목표 달성': '目標達成', '눌러서 목표 수정': 'タップして目標を編集', '목표 금액': '目標金額', '달성률': '達成率',
-    '저축 내역': '貯金の記録', '개별 기록': '個別の記録', '기록된 저축 내역이 없습니다.': '貯金の記録はまだありません。', '소비 내역': '支出の記録', '기록된 소비 내역이 없습니다.': '支出の記録はまだありません。',
-    '급여기간별': '給与期間別', '저축 = 수입 − 소비': '貯金 = 収入 − 支出', '현재 급여기간 · 저축 기록 기준': '現在の給与期間 · 貯金記録を基準',
-    '네트워크 안내:': 'ネットワークのお知らせ:', '가계부 저축 기록 및 레벨업 기능은 인터넷 연결 없이도 안전하게 작동합니다.': '家計簿の貯金記録とレベルアップ機能は、インターネット接続なしでも安全に利用できます。',
-    'GitHub 최신 동기화': 'GitHubと最新状態に同期', '오프라인 로컬 캐시': 'オフラインのローカルキャッシュ', '기본 내장 데이터': '内蔵の初期データ', 'GitHub XML 다시 동기화': 'GitHub XMLを再同期', '새로고침': '更新',
-    '앱테크 추천': 'おすすめアプリ', '소소하게 포인트를 모아 저축 부수입을 만드는 추천 서비스 목록': 'ポイントを少しずつ貯めて、貯金の足しにできるサービスの一覧', '출처: GitHub XML': '出典: GitHub XML',
-    '추천인 코드:': '紹介コード:', '코드 복사': 'コードをコピー', '복사됨': 'コピーしました', '가입 및 시작하기': '登録して始める', '투명성 고지 및 안내': '透明性に関するお知らせ',
-    '앱테크 추천은 부가적인 편의 기능이며, 본 가계부 앱의 모든 핵심 저축 및 레벨업 기능은 인터넷 연결 및 앱테크 여부와 무관하게 100% 로컬에서 작동합니다.': 'おすすめアプリは補助的な機能です。家計簿の貯金・レベルアップ機能は、インターネット接続やおすすめサービスの利用に関係なく、すべて端末内で動作します。',
-    '위 추천 링크 및 추천인 코드를 통해 가입하시는 경우, 앱 운영자에게 소定の 보상(포인트, 리워드)이 발생할 수 있습니다.': 'おすすめリンクや紹介コードから登録すると、アプリ運営者にポイントなどの小さな報酬が入る場合があります。',
-  },
+    '저축 가계부': '貯金家計簿', '시트 백업': 'シートにバックアップ', '넓게 보기': '広く表示', '스마트폰 뷰': 'スマートフォン表示', '홈': 'ホーム', '히스토리': '履歴', '저축 히스토리': '貯金の履歴', '월별': '月別', '년별': '年別', '급여일': '給料日', '이번 급여기간 · 수입': '今回の給与期間 · 収入', '현재 저축': '現在の貯金', '저축': '貯金', '수입': '収入', '소비': '支出', '고정 저축': '固定貯金', '최근 돈의 흐름': '最近のお金の流れ', '전체보기': 'すべて見る', '아직 기록이 없어요. 수입부터 입력해 보세요.': 'まだ記録がありません。まずは収入を入力してみましょう。', '연간 랭크': '年間ランク', '오늘의 추천 앱': '今日のおすすめアプリ', '앱 자세히 보기 ↗': 'アプリを見る ↗', 'Google Sheets 백업': 'Google Sheetsにバックアップ', '필요할 때만 직접 백업합니다': '必要なときに手動でバックアップします', 'Google Sheets에 백업하기': 'Google Sheetsにバックアップ', '저장된 백업 시트가 있으면 그 시트에 현재 데이터를 덮어쓰고, 처음 백업할 때만 새 Google Sheets를 만듭니다.': '保存済みのバックアップシートがあれば、そこに現在のデータを上書きします。初回のみ新しいシートを作成します。', '백업 중...': 'バックアップ中…', '백업하기': 'バックアップする', 'Google 로그인이나 데이터 변경만으로는 자동 백업하지 않습니다.': 'Googleへのログインやデータの変更だけでは、自動バックアップされません。', 'Sheets에서 복구하기': 'Sheetsから復元', '백업해 둔 Google Sheets의 주소를 입력하면 급여일, 수입, 저축, 소비, 목표 저축액을 이 기기로 복구합니다.': 'バックアップしたGoogle SheetsのURLを入力すると、給料日・収入・貯金・支出・貯金目標をこの端末に復元できます。', '복구 중...': '復元中…', '복구하기': '復元する', '최근 백업': '最新のバックアップ', '백업 시트 있음': 'バックアップシートあり', '아직 없음': 'まだありません', '최근 백업 시트 열기': '最新のバックアップシートを開く', '저장된 연결 정보 지우기': '保存した接続情報を削除', '취소': 'キャンセル', '삭제': '削除', '저축 기록 수정': '貯金記録を編集', '수정 완료': '変更を保存', '돈의 흐름을 개별 항목으로 기록합니다.': 'お金の流れを項目ごとに記録します。', '금액 (원)': '金額（ウォン）', '날짜': '日付', '메모': 'メモ', '이 기록을 삭제할까요?': 'この記録を削除しますか？', '저축 목표': '貯金目標', '목표 달성': '目標達成', '눌러서 목표 수정': 'タップして目標を編集', '목표 금액': '目標金額', '저축 내역': '貯金の記録', '개별 기록': '個別の記録', '기록된 저축 내역이 없습니다.': '貯金の記録はまだありません。', '소비 내역': '支出の記録', '기록된 소비 내역이 없습니다.': '支出の記録はまだありません。', '급여기간별': '給与期間別', '저축 = 수입 − 소비': '貯金 = 収入 − 支出', '현재 급여기간 · 저축 기록 기준': '現在の給与期間 · 貯金記録を基準', '네트워크 안내:': 'ネットワークのお知らせ:', '가계부 저축 기록 및 레벨업 기능은 인터넷 연결 없이도 안전하게 작동합니다.': '家計簿の貯金記録とレベルアップ機能は、インターネット接続なしでも安全に利用できます。', 'GitHub 최신 동기화': 'GitHubと最新状態に同期', '오프라인 로컬 캐시': 'オフラインのローカルキャッシュ', '기본 내장 데이터': '内蔵の初期データ', 'GitHub XML 다시 동기화': 'GitHub XMLを再同期', '새로고침': '更新', '앱테크 추천': 'おすすめアプリ', '소소하게 포인트를 모아 저축 부수입을 만드는 추천 서비스 목록': 'ポイントを少しずつ貯めて、貯金の足しにできるサービスの一覧', '출처: GitHub XML': '出典: GitHub XML', '추천인 코드:': '紹介コード:', '코드 복사': 'コードをコピー', '복사됨': 'コピーしました', '가입 및 시작하기': '登録して始める', '투명성 고지 및 안내': '透明性に関するお知らせ', '위 추천 링크 및 추천인 코드를 통해 가입하시는 경우, 앱 운영자에게 소정의 보상(포인트, 리워드)이 발생할 수 있습니다.': 'おすすめリンクや紹介コードから登録すると、アプリ運営者にポイントなどの小さな報酬が入る場合があります。', '앱테크 추천은 부가적인 편의 기능이며, 본 가계부 앱의 모든 핵심 저축 및 레벨업 기능은 인터넷 연결 및 앱테크 여부와 무관하게 100% 로컬에서 작동합니다.': 'おすすめアプリは補助的な機能です。家計簿の貯金・レベルアップ機能は、インターネット接続やおすすめサービスの利用に関係なく、すべて端末内で動作します。'
+  }
 };
 
 export function getInitialLanguage(): Language {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'ko' || saved === 'en' || saved === 'ja') return saved;
-  } catch {}
+  try { const saved = localStorage.getItem(STORAGE_KEY); if (saved === 'ko' || saved === 'en' || saved === 'ja') return saved; } catch {}
   const browser = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : 'ko';
   return browser.startsWith('ja') ? 'ja' : browser.startsWith('en') ? 'en' : 'ko';
 }
-
-export function setLanguage(language: Language) {
-  try { localStorage.setItem(STORAGE_KEY, language); } catch {}
-  document.documentElement.lang = language === 'ja' ? 'ja' : language;
-  document.title = language === 'ja' ? '貯金家計簿' : language === 'en' ? 'Savings Ledger' : '저축 가계부';
-}
-
-export function t(text: string, language: Language): string {
-  return translations[language][text] || text;
-}
-
+export function setLanguage(language: Language) { try { localStorage.setItem(STORAGE_KEY, language); } catch {} document.documentElement.lang = language; document.title = language === 'ja' ? '貯金家計簿' : language === 'en' ? 'Savings Ledger' : '저축 가계부'; }
+export function t(text: string, language: Language): string { return translations[language][text] || text; }
 export function translateText(text: string, language: Language): string {
-  const direct = t(text, language);
-  if (direct !== text) return direct;
+  const direct = t(text, language); if (direct !== text) return direct;
   if (language === 'ko') return text;
   let result = text;
   result = result.replace(/^급여일 (\d+)일$/, language === 'ja' ? '給料日 $1日' : 'Payday $1');
   result = result.replace(/^(\d{4})년 (\d+)원$/, language === 'ja' ? '$1年 $2ウォン' : '$1 · $2 KRW');
-  result = result.replace(/^(\d+)년 (\d+)원$/, language === 'ja' ? '$1年 $2ウォン' : '$1 · $2 KRW');
   result = result.replace(/^(\d+)월$/, language === 'ja' ? '$1月' : '$1');
   result = result.replace(/^(\d+)년$/, language === 'ja' ? '$1年' : '$1');
   result = result.replace(/^업데이트: /, language === 'ja' ? '更新: ' : 'Updated: ');
@@ -90,32 +30,11 @@ export function translateText(text: string, language: Language): string {
   result = result.replace(/^달성률 (\d+)%$/, language === 'ja' ? '達成率 $1%' : 'Progress $1%');
   return result;
 }
-
 export function applyLanguage(root: ParentNode, language: Language) {
   if (language === 'ko') return;
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  const nodes: Text[] = [];
-  let node: Node | null;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const nodes: Text[] = []; let node: Node | null;
   while ((node = walker.nextNode())) nodes.push(node as Text);
-  nodes.forEach((textNode) => {
-    const value = textNode.nodeValue || '';
-    const trimmed = value.trim();
-    if (!trimmed) return;
-    const translated = translateText(trimmed, language);
-    if (translated !== trimmed) textNode.nodeValue = value.replace(trimmed, translated);
-  });
-  root.querySelectorAll('input[placeholder], button[title], [aria-label]').forEach((element) => {
-    ['placeholder', 'title', 'aria-label'].forEach((attribute) => {
-      const value = element.getAttribute(attribute);
-      if (value) element.setAttribute(attribute, translateText(value, language));
-    });
-  });
+  nodes.forEach((textNode) => { const value = textNode.nodeValue || ''; const trimmed = value.trim(); if (!trimmed) return; const translated = translateText(trimmed, language); if (translated !== trimmed) textNode.nodeValue = value.replace(trimmed, translated); });
+  root.querySelectorAll('input[placeholder], button[title], [aria-label]').forEach((element) => ['placeholder', 'title', 'aria-label'].forEach((attribute) => { const value = element.getAttribute(attribute); if (value) element.setAttribute(attribute, translateText(value, language)); }));
 }
-
-export function observeLanguage(language: Language): () => void {
-  setLanguage(language);
-  const observer = new MutationObserver(() => applyLanguage(document.body, language));
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-  applyLanguage(document.body, language);
-  return () => observer.disconnect();
-}
+export function observeLanguage(language: Language): () => void { setLanguage(language); const observer = new MutationObserver(() => applyLanguage(document.body, language)); observer.observe(document.body, { childList: true, subtree: true, characterData: true }); applyLanguage(document.body, language); return () => observer.disconnect(); }
