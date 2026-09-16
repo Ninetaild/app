@@ -41,7 +41,11 @@ export function formatMonthDisplay(monthKey: string): string {
 }
 
 export function formatCurrencyKRW(amount: number): string {
-  return new Intl.NumberFormat('ko-KR').format(amount) + '원';
+  const formatted = new Intl.NumberFormat('en-US').format(amount);
+  const language = typeof document !== 'undefined' ? document.documentElement.lang : 'ko';
+  if (language === 'en') return `$${formatted}`;
+  if (language === 'ja') return `¥${formatted}`;
+  return `${formatted}원`;
 }
 
 export function formatDateKorean(dateStr: string): string {
@@ -529,4 +533,3 @@ export const StorageRepository = {
     }
   },
 };
-
