@@ -40,13 +40,13 @@ export const HistoryScreen: React.FC = () => {
 
     // 년별 조회도 달력 월이 아니라 급여기간의 시작 월을 기준으로 표시합니다.
     // 예: 급여일 25일이면 8월 급여기간 = 8/25 ~ 9/24 입니다.
-    const years = new Set<number>([currentCycle.startDate.slice(0, 4), previousCycle.startDate.slice(0, 4)].map(Number));
+    const years = new Set<number>([currentCycle.startDate, previousCycle.startDate].map((start) => Number(start.slice(0, 4))));
     [...records.map((r) => getCycleForDate(new Date(`${r.date}T00:00:00`), payday).startDate), ...transactions.map((t) => getCycleForDate(new Date(`${t.date}T00:00:00`), payday).startDate)].forEach((start) => {
       const n = Number(start.slice(0, 4));
       if (Number.isInteger(n)) years.add(n);
     });
     setAvailableYears([...years].sort((a, b) => b - a));
-    setSelectedYear((current) => years.has(current) ? current : currentCycle.startDate.slice(0, 4) as unknown as number);
+    setSelectedYear((current) => years.has(current) ? current : Number(currentCycle.startDate.slice(0, 4)));
   };
   useEffect(() => { loadData(); const a = StorageRepository.subscribe(loadData); const b = CycleStorage.subscribe(loadData); return () => { a(); b(); }; }, []);
 
@@ -54,7 +54,10 @@ export const HistoryScreen: React.FC = () => {
   const currentCycle = useMemo(() => getCycleForDate(new Date(), payday), [payday]);
   const selectedCycle = useMemo(() => selectedCycleStart ? { startDate: selectedCycleStart, endDate: getCycleForDate(new Date(`${selectedCycleStart}T12:00:00`), payday).endDate } : currentCycle, [selectedCycleStart, payday, currentCycle]);
   const isCurrentCycle = selectedCycle.startDate === currentCycle.startDate;
-  const targetTransactions = useMemo(() => mode === 'month' ? allTransactions.filter((t) => t.date >= selectedCycle.startDate && t.date < selectedCycle.endDate) : allTransactions.filter((t) => t.date.startsWith(`${selectedYear}-`)), [allTransactions, mode, selectedCycle, selectedYear]);
+  const targetTransactions = useMemo(() => {
+    if (mode === 'month') return allTransactions.filter((t) => t.date >= selectedCycle.startDate && t.date < selectedCycle.endDate);
+    return allTransactions.filter((t) => getCycleForDate(new Date(`${t.date}T00:00:00`), payday).startDate.slice(0, 4) === String(selectedYear));
+  }, [allTransactions, mode, selectedCycle, selectedYear, payday]);
   const income = targetTransactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + Math.max(0, t.amount), 0);
   const expense = targetTransactions.filter((t) => t.type === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0);
   const cycleRecords = allRecords.filter((r) => r.date >= selectedCycle.startDate && r.date < selectedCycle.endDate);
