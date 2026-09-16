@@ -71,7 +71,7 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({ isOpen, on
         </div>
 
         <div className="p-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 space-y-3">
-          <div><p className="text-xs font-black text-stone-900">Google Sheets에 백업하기</p><p className="text-[11px] leading-relaxed text-stone-600 mt-0.5">백업하기를 누르면 Google 계정으로 인증한 뒤 새 Google Sheets를 만들고 현재 데이터를 기록합니다.</p></div>
+          <div><p className="text-xs font-black text-stone-900">Google Sheets에 백업하기</p><p className="text-[11px] leading-relaxed text-stone-600 mt-0.5">저장된 백업 시트가 있으면 그 시트에 현재 데이터를 덮어쓰고, 처음 백업할 때만 새 Google Sheets를 만듭니다.</p></div>
           <button type="button" onClick={backupNow} disabled={isBackingUp || isRestoring} className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2"><RefreshCw className={`w-3.5 h-3.5 ${isBackingUp ? 'animate-spin' : ''}`} />{isBackingUp ? '백업 중...' : '백업하기'}</button>
           <p className="text-[10px] text-stone-500">Google 로그인이나 데이터 변경만으로는 자동 백업하지 않습니다.</p>
         </div>
