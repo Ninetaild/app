@@ -50,12 +50,21 @@ async function formatSheets(spreadsheetId: string, spreadsheet: SpreadsheetInfo)
 export async function backupToGoogleSheets(records: SavingRecord[], goals: Record<string, number>, settings: AppSettings): Promise<boolean> {
   if (!getGoogleClientId()) throw new Error('Google OAuth Client ID가 설정되지 않았습니다.'); updateSyncStatus('syncing');
   try {
-    // Every explicit backup creates a fresh snapshot instead of silently updating an old cloud copy.
-    const spreadsheet = await createSpreadsheet(); const id = spreadsheet.spreadsheetId!; const rows = rowsForBackup(records, goals, settings);
+    // If a backup/restore Sheet is already saved, keep using that exact Sheet for future backups.
+    // A new Sheet is created only when no saved Sheet connection exists yet.
+    const savedSpreadsheetId = getSavedSpreadsheetId();
+    const spreadsheet = savedSpreadsheetId
+      ? await getSpreadsheetMetadata(savedSpreadsheetId)
+      : await createSpreadsheet();
+    const id = spreadsheet.spreadsheetId || savedSpreadsheetId;
+    if (!id) throw new Error('Google Sheets를 확인할 수 없습니다.');
+    await ensureRequiredSheets({ ...spreadsheet, spreadsheetId: id });
+    const latest = await getSpreadsheetMetadata(id);
+    const rows = rowsForBackup(records, goals, settings);
     await Promise.all(REQUIRED_SHEETS.map((title) => clearRange(id, `${title}!A:Z`)));
     await Promise.all([writeRange(id, '급여일!A1', rows.payday), writeRange(id, '수입!A1', rows.income), writeRange(id, '저축!A1', rows.saving), writeRange(id, '소비!A1', rows.expense), writeRange(id, '목표 저축액!A1', rows.goal)]);
-    const latest = await googleApi<SpreadsheetInfo>(`/spreadsheets/${encodeURIComponent(id)}?includeGridData=false`); await ensureRequiredSheets(latest); await formatSheets(id, latest);
-    saveSheetsConnection(id, latest.spreadsheetUrl || spreadsheet.spreadsheetUrl || spreadsheetUrl(id)); updateSyncStatus('success'); return true;
+    const formatted = await getSpreadsheetMetadata(id); await formatSheets(id, formatted);
+    saveSheetsConnection(id, formatted.spreadsheetUrl || spreadsheet.spreadsheetUrl || spreadsheetUrl(id)); updateSyncStatus('success'); return true;
   } catch (error) { console.warn('Google Sheets backup failed; local data remains available:', error); updateSyncStatus('error'); return false; }
 }
 
