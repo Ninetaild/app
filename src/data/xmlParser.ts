@@ -13,6 +13,7 @@ export const DEFAULT_APPTECH_XML = `<?xml version="1.0" encoding="UTF-8"?>
 const APPTECH_CACHE_KEY = 'saving_game_apptech_cache_data_v1';
 const APPTECH_CACHE_TIME_KEY = 'saving_game_apptech_cache_time_v1';
 const XML_DIRECTORY_API_URL = 'https://api.github.com/repos/Ninetaild/app/contents/xml';
+const RAW_GITHUB_BASE_URL = 'https://raw.githubusercontent.com/Ninetaild/app';
 
 function childText(element: Element, name: string): string { return element.querySelector(name)?.textContent?.trim() || ''; }
 function readAttributeOrChild(element: Element, name: string): string { return element.getAttribute(name)?.trim() || childText(element, name); }
@@ -35,7 +36,7 @@ export function parseAppTechXml(xmlString: string): AppTechItem[] {
 
 export interface AppTechFetchResult { items: AppTechItem[]; source: 'network' | 'cache' | 'default'; lastUpdated: string; errorMessage?: string; }
 
-interface GitHubXmlFile { name: string; download_url: string | null; type: string; }
+interface GitHubXmlFile { name: string; download_url: string | null; type: string; sha: string; }
 
 export const AppTechRepository = {
   getCachedData(): { items: AppTechItem[]; time: string } | null {
@@ -47,23 +48,25 @@ export const AppTechRepository = {
   },
   async fetchAppTechItems(_url?: string): Promise<AppTechFetchResult> {
     try {
-      const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const listResponse = await fetch(`${XML_DIRECTORY_API_URL}?_refresh=${Date.now()}`, { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/vnd.github+json' } });
+      clearTimeout(timeoutId);
       if (!listResponse.ok) throw new Error(`XML 목록 HTTP ${listResponse.status}: ${listResponse.statusText}`);
       const files = (await listResponse.json()) as GitHubXmlFile[];
-      const xmlFiles = files.filter((file) => file.type === 'file' && file.name.toLowerCase().endsWith('.xml') && file.download_url);
+      const xmlFiles = files.filter((file) => file.type === 'file' && file.name.toLowerCase().endsWith('.xml') && file.sha);
       if (xmlFiles.length === 0) throw new Error('xml 디렉터리에 XML 파일이 없습니다.');
 
-      const remainingMs = 4500;
-      const xmlItems = await Promise.all(xmlFiles.map(async (file) => {
-        const response = await fetch(`${file.download_url}${file.download_url!.includes('?') ? '&' : '?'}_refresh=${Date.now()}`, { signal: AbortSignal.timeout(remainingMs), cache: 'no-store' });
+      const xmlResults = await Promise.allSettled(xmlFiles.map(async (file) => {
+        // Use the file's blob SHA in the raw URL so a changed XML gets a new URL immediately.
+        const response = await fetch(`${RAW_GITHUB_BASE_URL}/${file.sha}/xml/${encodeURIComponent(file.name)}`, { signal: AbortSignal.timeout(4500), cache: 'no-store' });
         if (!response.ok) throw new Error(`${file.name} HTTP ${response.status}: ${response.statusText}`);
         return parseAppTechXml(await response.text());
       }));
-      const parsedItems = xmlItems.flat();
-      if (parsedItems.length === 0) throw new Error('xml 디렉터리의 XML 파일에 표시할 활성 앱이 없습니다.');
-      this.saveToCache(parsedItems);
-      return { items: parsedItems, source: 'network', lastUpdated: new Date().toLocaleString('ko-KR') };
+      const successfulItems = xmlResults.filter((result): result is PromiseFulfilledResult<AppTechItem[]> => result.status === 'fulfilled').flatMap((result) => result.value);
+      if (successfulItems.length === 0) throw new Error('GitHub의 XML 파일을 불러오지 못했습니다.');
+      this.saveToCache(successfulItems);
+      return { items: successfulItems, source: 'network', lastUpdated: new Date().toLocaleString('ko-KR') };
     } catch (error: unknown) {
       const errorMsg = error instanceof Error ? error.message : '네트워크 통신 실패'; console.warn('Recommended app XML fetch failed, using local cache/default:', errorMsg);
       const cached = this.getCachedData();
