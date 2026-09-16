@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Calendar, ChevronLeft, ChevronRight, TrendingUp, TrendingDown, AlertCircle, Target } from 'lucide-react';
 import { SavingRecord } from '../types';
 import { StorageRepository, formatCurrencyKRW, formatDateKorean, formatMonthDisplay } from '../data/storage';
-import { CycleStorage, CycleTransaction, getCycleForDate } from '../data/cycleStorage';
+import { CycleStorage, CycleTransaction, getCycleForDate, getPreviousDate } from '../data/cycleStorage';
 import { LevelCalculator } from '../domain/levelCalculator';
 
 type ViewMode = 'month' | 'year';
@@ -24,7 +24,7 @@ export const HistoryScreen: React.FC = () => {
     const payday = StorageRepository.getSettings().payday;
     const today = new Date();
     const currentCycle = getCycleForDate(today, payday);
-    const previousCycle = getCycleForDate(new Date(`${currentCycle.startDate}T12:00:00`).setDate ? new Date(new Date(`${currentCycle.startDate}T12:00:00`).getTime() - 86400000) : today, payday);
+    const previousCycle = getCycleForDate(getPreviousDate(new Date(`${currentCycle.startDate}T12:00:00`)), payday);
     const cycleStarts = new Set<string>([currentCycle.startDate, previousCycle.startDate]);
     records.forEach((r) => cycleStarts.add(getCycleForDate(new Date(`${r.date}T00:00:00`), payday).startDate));
     transactions.forEach((t) => cycleStarts.add(getCycleForDate(new Date(`${t.date}T00:00:00`), payday).startDate));
