@@ -2,11 +2,11 @@ import { AppTechItem } from '../types';
 
 export const DEFAULT_APPTECH_XML = `<?xml version="1.0" encoding="UTF-8"?>
 <recommendedApps version="1.0">
-  <app id="monimo" isActive="true">
-    <name>모니모 (Monimo)</name>
-    <category>금융/미션</category>
-    <description>매일 미션과 챌린지로 포인트를 모아 생활비 절약에 활용할 수 있습니다.</description>
-    <url>https://monimo.com</url>
+  <app id="Life_planet" isActive="true">
+    <name>라이프플래닛</name>
+    <category>만보기</category>
+    <description>만보 걷고 하루 한 번 버튼 클릭만으로 기프티콘 구매해요</description>
+    <url>https://m.lifeplanet.co.kr:444/bridge/bm/BM07000S.dev?shareCd=20231098212</url>
   </app>
 </recommendedApps>`;
 
